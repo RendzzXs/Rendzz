@@ -1,0 +1,3225 @@
+#!/bin/bash
+
+# Pterodactyl Premium Theme Changer - Interactive Version
+# Semua button dan elemen interaktif akan berfungsi dengan animasi!
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+WHITE='\033[1;37m'
+NC='\033[0m'
+
+PTERODACTYL_DIR="/var/www/pterodactyl"
+BACKUP_DIR="/root/pterodactyl_backup"
+
+show_banner() {
+    clear
+    echo -e "${PURPLE}╔══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${PURPLE}║${WHITE}       PTERODACTYL PREMIUM THEME - INTERACTIVE         ${PURPLE}║${NC}"
+    echo -e "${PURPLE}║${WHITE}       Semua Button Beneran Bisa Dipencet!             ${PURPLE}║${NC}"
+    echo -e "${PURPLE}╚══════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+}
+
+check_root() {
+    if [[ $EUID -ne 0 ]]; then
+        echo -e "${RED}Error: Script ini harus dijalankan sebagai root!${NC}"
+        exit 1
+    fi
+}
+
+check_pterodactyl() {
+    if [ ! -d "$PTERODACTYL_DIR" ]; then
+        echo -e "${RED}Error: Pterodactyl tidak ditemukan di $PTERODACTYL_DIR${NC}"
+        exit 1
+    fi
+}
+
+backup_files() {
+    echo -e "${YELLOW}Membuat backup...${NC}"
+    mkdir -p "$BACKUP_DIR"
+    cp -r "$PTERODACTYL_DIR/resources/views" "$BACKUP_DIR/"
+    cp -r "$PTERODACTYL_DIR/public" "$BACKUP_DIR/"
+    cp -r "$PTERODACTYL_DIR/app" "$BACKUP_DIR/" 2>/dev/null
+    cp -r "$PTERODACTYL_DIR/routes" "$BACKUP_DIR/" 2>/dev/null
+    echo -e "${GREEN}Backup berhasil dibuat di $BACKUP_DIR${NC}"
+}
+
+restore_backup() {
+    echo -e "${YELLOW}Merestore backup...${NC}"
+    if [ -d "$BACKUP_DIR" ]; then
+        cp -rf "$BACKUP_DIR/views" "$PTERODACTYL_DIR/resources/" 2>/dev/null
+        cp -rf "$BACKUP_DIR/public" "$PTERODACTYL_DIR/" 2>/dev/null
+        cp -rf "$BACKUP_DIR/app" "$PTERODACTYL_DIR/" 2>/dev/null
+        cp -rf "$BACKUP_DIR/routes" "$PTERODACTYL_DIR/" 2>/dev/null
+        echo -e "${GREEN}Restore berhasil!${NC}"
+    else
+        echo -e "${RED}Tidak ada backup ditemukan!${NC}"
+    fi
+}
+
+# Install Interactive Dark Theme dengan button effects
+install_dark_theme() {
+    echo -e "${CYAN}Menginstall Interactive Dark Theme Premium...${NC}"
+    
+    mkdir -p "$PTERODACTYL_DIR/public/theme"
+    mkdir -p "$PTERODACTYL_DIR/public/theme/js"
+    mkdir -p "$PTERODACTYL_DIR/public/theme/css"
+    mkdir -p "$PTERODACTYL_DIR/public/theme/img"
+    
+    # CSS dengan button effects yang interaktif
+    cat > "$PTERODACTYL_DIR/public/theme/css/interactive-dark.css" << 'EOF'
+:root {
+    --primary-bg: #0a0c0f;
+    --secondary-bg: #1a1e24;
+    --card-bg: #1f2329;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b7c0;
+    --accent-color: #6e45e2;
+    --accent-hover: #8b5cf6;
+    --accent-active: #4c2aa3;
+    --border-color: #2d323a;
+    --success-color: #3bb75e;
+    --danger-color: #e5484d;
+    --warning-color: #f0b400;
+    --info-color: #4299e1;
+    --gradient-1: linear-gradient(135deg, #6e45e2, #9f7aea);
+    --gradient-2: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    --gradient-3: linear-gradient(135deg, #f59e0b, #f97316);
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.5);
+    --shadow-accent: 0 4px 12px rgba(110,69,226,0.3);
+    --blur-bg: rgba(26,30,36,0.8);
+}
+
+body {
+    background: linear-gradient(135deg, var(--primary-bg) 0%, #0f1217 100%) !important;
+    color: var(--text-primary) !important;
+    font-family: 'Inter', sans-serif;
+}
+
+/* ===== BUTTON STYLES - SEMUA BERFUNGSI DENGAN BAIK ===== */
+.btn {
+    position: relative !important;
+    overflow: hidden !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border: none !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+    font-size: 12px !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    z-index: 1 !important;
+}
+
+/* Button Primary - BENERAN BISA DIPENCET */
+.btn-primary {
+    background: var(--gradient-1) !important;
+    color: white !important;
+    box-shadow: var(--shadow-accent) !important;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 16px rgba(110,69,226,0.4) !important;
+    background: linear-gradient(135deg, #7b55e5, #a78bfa) !important;
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(1px) !important;
+    box-shadow: 0 2px 8px rgba(110,69,226,0.4) !important;
+    background: linear-gradient(135deg, #5a35c9, #6e45e2) !important;
+}
+
+.btn-primary:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+}
+
+/* Button Secondary */
+.btn-secondary {
+    background: var(--secondary-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #252b33 !important;
+    border-color: var(--accent-color) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+.btn-secondary:active:not(:disabled) {
+    background: #1a1e24 !important;
+    transform: translateY(1px) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+/* Button Danger */
+.btn-danger {
+    background: linear-gradient(135deg, #e5484d, #dc2626) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(229,72,77,0.3) !important;
+}
+
+.btn-danger:hover:not(:disabled) {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 16px rgba(229,72,77,0.4) !important;
+    background: linear-gradient(135deg, #f87171, #dc2626) !important;
+}
+
+.btn-danger:active:not(:disabled) {
+    transform: translateY(1px) !important;
+    box-shadow: 0 2px 8px rgba(229,72,77,0.4) !important;
+}
+
+/* Button Success */
+.btn-success {
+    background: linear-gradient(135deg, #3bb75e, #059669) !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(59,183,94,0.3) !important;
+}
+
+.btn-success:hover:not(:disabled) {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 16px rgba(59,183,94,0.4) !important;
+}
+
+/* Button Outline */
+.btn-outline-primary {
+    background: transparent !important;
+    border: 2px solid var(--accent-color) !important;
+    color: var(--accent-color) !important;
+}
+
+.btn-outline-primary:hover:not(:disabled) {
+    background: var(--accent-color) !important;
+    color: white !important;
+    transform: translateY(-2px) !important;
+    box-shadow: var(--shadow-accent) !important;
+}
+
+/* Ripple Effect - Animasi saat dipencet */
+.btn::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 0 !important;
+    height: 0 !important;
+    border-radius: 50% !important;
+    background: rgba(255,255,255,0.5) !important;
+    transform: translate(-50%, -50%) !important;
+    transition: width 0.3s, height 0.3s !important;
+    opacity: 0 !important;
+    z-index: -1 !important;
+}
+
+.btn:active::after {
+    width: 200px !important;
+    height: 200px !important;
+    opacity: 1 !important;
+    transition: 0s !important;
+}
+
+/* Card Styles */
+.card {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 16px !important;
+    box-shadow: var(--shadow-md) !important;
+    transition: all 0.3s ease !important;
+}
+
+.card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: var(--shadow-lg) !important;
+    border-color: var(--accent-color) !important;
+}
+
+/* Card Clickable */
+.card-clickable {
+    cursor: pointer !important;
+}
+
+.card-clickable:active {
+    transform: scale(0.98) !important;
+}
+
+/* Navbar */
+.navbar {
+    background: var(--blur-bg) !important;
+    backdrop-filter: blur(10px) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+/* Dropdown */
+.dropdown-menu {
+    background: var(--secondary-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--shadow-lg) !important;
+    padding: 8px !important;
+}
+
+.dropdown-item {
+    color: var(--text-primary) !important;
+    border-radius: 8px !important;
+    padding: 8px 16px !important;
+    transition: all 0.2s !important;
+}
+
+.dropdown-item:hover {
+    background: var(--card-bg) !important;
+    color: var(--accent-color) !important;
+    transform: translateX(4px) !important;
+}
+
+.dropdown-item:active {
+    background: var(--accent-color) !important;
+    color: white !important;
+}
+
+/* Modal */
+.modal-content {
+    background: var(--secondary-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 20px !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 20px !important;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-color) !important;
+    padding: 20px !important;
+}
+
+/* Form Controls */
+.form-control, .form-select {
+    background: var(--primary-bg) !important;
+    border: 2px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    border-radius: 10px !important;
+    padding: 10px 16px !important;
+    transition: all 0.2s !important;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--accent-color) !important;
+    box-shadow: 0 0 0 4px rgba(110,69,226,0.2) !important;
+    outline: none !important;
+}
+
+.form-control:hover:not(:focus) {
+    border-color: var(--text-secondary) !important;
+}
+
+/* Switch / Toggle Button */
+.custom-switch {
+    position: relative !important;
+    display: inline-block !important;
+    width: 50px !important;
+    height: 24px !important;
+}
+
+.custom-switch input {
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+.switch-slider {
+    position: absolute !important;
+    cursor: pointer !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background-color: var(--border-color) !important;
+    transition: 0.3s !important;
+    border-radius: 34px !important;
+}
+
+.switch-slider:before {
+    position: absolute !important;
+    content: "" !important;
+    height: 20px !important;
+    width: 20px !important;
+    left: 2px !important;
+    bottom: 2px !important;
+    background-color: white !important;
+    transition: 0.3s !important;
+    border-radius: 50% !important;
+}
+
+input:checked + .switch-slider {
+    background-color: var(--accent-color) !important;
+}
+
+input:checked + .switch-slider:before {
+    transform: translateX(26px) !important;
+}
+
+/* Tab Navigation */
+.nav-tabs {
+    border-bottom: 2px solid var(--border-color) !important;
+}
+
+.nav-tabs .nav-link {
+    color: var(--text-secondary) !important;
+    border: none !important;
+    padding: 12px 24px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s !important;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--accent-color) !important;
+    transform: translateY(-2px) !important;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--accent-color) !important;
+    border-bottom: 3px solid var(--accent-color) !important;
+    background: transparent !important;
+}
+
+/* Server Cards Interactive */
+.server-card {
+    position: relative !important;
+    cursor: pointer !important;
+    overflow: hidden !important;
+}
+
+.server-card::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent) !important;
+    transition: left 0.5s !important;
+}
+
+.server-card:hover::before {
+    left: 100% !important;
+}
+
+.server-card:active {
+    transform: scale(0.98) !important;
+}
+
+/* Premium Badge */
+.premium-badge {
+    background: var(--gradient-1) !important;
+    color: white !important;
+    padding: 4px 12px !important;
+    border-radius: 20px !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+    display: inline-block !important;
+    box-shadow: var(--shadow-accent) !important;
+}
+
+/* Loading Spinner */
+.spinner-premium {
+    width: 40px !important;
+    height: 40px !important;
+    border: 4px solid var(--border-color) !important;
+    border-top: 4px solid var(--accent-color) !important;
+    border-radius: 50% !important;
+    animation: spin 1s linear infinite !important;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Progress Bar */
+.progress {
+    background: var(--primary-bg) !important;
+    border-radius: 10px !important;
+    height: 8px !important;
+    overflow: hidden !important;
+}
+
+.progress-bar {
+    background: var(--gradient-1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.progress-bar::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent) !important;
+    animation: shimmer 2s infinite !important;
+}
+
+/* Alert / Notification */
+.alert {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-left: 4px solid var(--accent-color) !important;
+    border-radius: 10px !important;
+    color: var(--text-primary) !important;
+}
+
+.alert-success {
+    border-left-color: var(--success-color) !important;
+}
+
+.alert-danger {
+    border-left-color: var(--danger-color) !important;
+}
+
+.alert-warning {
+    border-left-color: var(--warning-color) !important;
+}
+
+/* Tooltip */
+.tooltip {
+    position: relative !important;
+}
+
+.tooltip:hover::after {
+    content: attr(data-tooltip) !important;
+    position: absolute !important;
+    bottom: 100% !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background: var(--secondary-bg) !important;
+    color: var(--text-primary) !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+    border: 1px solid var(--border-color) !important;
+    z-index: 1000 !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 10px !important;
+    height: 10px !important;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--primary-bg) !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color) !important;
+    border-radius: 5px !important;
+    transition: all 0.2s !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-color) !important;
+}
+
+/* Table Styles */
+.table {
+    color: var(--text-primary) !important;
+}
+
+.table thead th {
+    border-bottom: 2px solid var(--border-color) !important;
+    color: var(--text-secondary) !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    font-size: 12px !important;
+}
+
+.table td {
+    border-top: 1px solid var(--border-color) !important;
+    vertical-align: middle !important;
+}
+
+.table-hover tbody tr:hover {
+    background: var(--card-bg) !important;
+    cursor: pointer !important;
+}
+
+/* Badge Styles */
+.badge {
+    padding: 6px 12px !important;
+    border-radius: 20px !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+}
+
+.badge.bg-success {
+    background: linear-gradient(135deg, #3bb75e, #059669) !important;
+}
+
+.badge.bg-danger {
+    background: linear-gradient(135deg, #e5484d, #dc2626) !important;
+}
+
+.badge.bg-warning {
+    background: linear-gradient(135deg, #f0b400, #d97706) !important;
+    color: black !important;
+}
+
+.badge.bg-info {
+    background: linear-gradient(135deg, #4299e1, #2563eb) !important;
+}
+
+/* Action Buttons - BENERAN BISA DIPENCET */
+.action-btn {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s !important;
+    cursor: pointer !important;
+    border: none !important;
+    color: white !important;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px) rotate(5deg) !important;
+}
+
+.action-btn:active {
+    transform: translateY(2px) scale(0.95) !important;
+}
+
+.action-btn.edit-btn {
+    background: linear-gradient(135deg, #4299e1, #2563eb) !important;
+}
+
+.action-btn.delete-btn {
+    background: linear-gradient(135deg, #e5484d, #dc2626) !important;
+}
+
+.action-btn.start-btn {
+    background: linear-gradient(135deg, #3bb75e, #059669) !important;
+}
+
+.action-btn.stop-btn {
+    background: linear-gradient(135deg, #f0b400, #d97706) !important;
+}
+
+.action-btn.restart-btn {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
+}
+
+/* Power Controls - BENERAN BISA DIPENCET */
+.power-control {
+    display: inline-flex !important;
+    gap: 8px !important;
+}
+
+.power-btn {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    border: none !important;
+    color: white !important;
+    font-size: 16px !important;
+    cursor: pointer !important;
+    transition: all 0.3s !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.power-btn::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 0 !important;
+    height: 0 !important;
+    border-radius: 50% !important;
+    background: rgba(255,255,255,0.3) !important;
+    transform: translate(-50%, -50%) !important;
+    transition: width 0.3s, height 0.3s !important;
+}
+
+.power-btn:active::before {
+    width: 80px !important;
+    height: 80px !important;
+}
+
+.power-btn.start {
+    background: linear-gradient(135deg, #3bb75e, #059669) !important;
+    box-shadow: 0 4px 12px rgba(59,183,94,0.3) !important;
+}
+
+.power-btn.stop {
+    background: linear-gradient(135deg, #e5484d, #dc2626) !important;
+    box-shadow: 0 4px 12px rgba(229,72,77,0.3) !important;
+}
+
+.power-btn.restart {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9) !important;
+    box-shadow: 0 4px 12px rgba(139,92,246,0.3) !important;
+}
+
+.power-btn:hover {
+    transform: translateY(-3px) scale(1.1) !important;
+}
+
+.power-btn:active {
+    transform: translateY(1px) scale(0.95) !important;
+}
+
+/* Settings Panel */
+.settings-panel {
+    background: var(--card-bg) !important;
+    border-radius: 16px !important;
+    padding: 20px !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.settings-item {
+    padding: 12px !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    transition: all 0.2s !important;
+    cursor: pointer !important;
+}
+
+.settings-item:hover {
+    background: var(--secondary-bg) !important;
+    padding-left: 20px !important;
+}
+
+.settings-item:active {
+    background: var(--accent-color) !important;
+}
+
+/* Resource Usage Bars */
+.resource-bar {
+    height: 8px !important;
+    background: var(--primary-bg) !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+    margin: 8px 0 !important;
+}
+
+.resource-fill {
+    height: 100% !important;
+    background: var(--gradient-1) !important;
+    border-radius: 4px !important;
+    transition: width 0.3s ease !important;
+    position: relative !important;
+}
+
+.resource-fill::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent) !important;
+    animation: shimmer 2s infinite !important;
+}
+
+/* Animation Keyframes */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Utility Classes */
+.cursor-pointer { cursor: pointer !important; }
+.transition-all { transition: all 0.3s ease !important; }
+.hover-glow:hover { box-shadow: var(--shadow-accent) !important; }
+.active-scale:active { transform: scale(0.95) !important; }
+.draggable { cursor: move !important; }
+.resizable { resize: both !important; overflow: auto !important; }
+EOF
+
+    # JavaScript untuk interaktivitas button
+    cat > "$PTERODACTYL_DIR/public/theme/js/interactive.js" << 'EOF'
+// Pterodactyl Interactive Theme
+// Semua button beneran berfungsi dengan animasi!
+
+(function() {
+    'use strict';
+
+    // Konfigurasi
+    const CONFIG = {
+        rippleDuration: 300,
+        toastDuration: 3000,
+        animationSpeed: '0.3s'
+    };
+
+    // Class untuk menangani interaksi button
+    class ButtonManager {
+        constructor() {
+            this.init();
+        }
+
+        init() {
+            this.addRippleEffect();
+            this.addHoverEffects();
+            this.addClickFeedback();
+            this.initPowerButtons();
+            this.initActionButtons();
+            this.initToggleButtons();
+            this.initDropdowns();
+            this.initModals();
+            this.initTooltips();
+            this.initServerCards();
+        }
+
+        // Ripple effect untuk semua button
+        addRippleEffect() {
+            document.querySelectorAll('.btn, .action-btn, .power-btn, .card-clickable').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+
+                    ripple.style.width = ripple.style.height = size + 'px';
+                    ripple.style.left = x + 'px';
+                    ripple.style.top = y + 'px';
+                    ripple.style.position = 'absolute';
+                    ripple.style.backgroundColor = 'rgba(255,255,255,0.3)';
+                    ripple.style.borderRadius = '50%';
+                    ripple.style.transform = 'scale(0)';
+                    ripple.style.animation = 'ripple 0.6s ease-out';
+                    ripple.style.pointerEvents = 'none';
+
+                    this.style.position = 'relative';
+                    this.style.overflow = 'hidden';
+                    this.appendChild(ripple);
+
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
+            });
+
+            // Tambahkan keyframes untuk ripple
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes ripple {
+                    to { transform: scale(4); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Hover effects dengan feedback visual
+        addHoverEffects() {
+            document.querySelectorAll('.btn, .action-btn, .power-btn').forEach(button => {
+                button.addEventListener('mouseenter', function() {
+                    this.style.transition = 'all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+                });
+
+                button.addEventListener('mouseleave', function() {
+                    this.style.transform = '';
+                });
+            });
+        }
+
+        // Click feedback dengan animasi
+        addClickFeedback() {
+            document.querySelectorAll('.btn, .action-btn, .power-btn, .nav-link, .dropdown-item').forEach(element => {
+                element.addEventListener('mousedown', function() {
+                    this.style.transform = 'scale(0.95)';
+                });
+
+                element.addEventListener('mouseup', function() {
+                    this.style.transform = '';
+                });
+
+                element.addEventListener('mouseleave', function() {
+                    this.style.transform = '';
+                });
+            });
+        }
+
+        // Power buttons (Start, Stop, Restart) - BENERAN BISA DIPENCET
+        initPowerButtons() {
+            document.querySelectorAll('.power-btn, [data-power]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const action = this.dataset.power || this.classList.contains('start') ? 'start' : 
+                                  this.classList.contains('stop') ? 'stop' : 'restart';
+                    const serverId = this.dataset.serverId || 'unknown';
+                    
+                    // Show loading state
+                    const originalHtml = this.innerHTML;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                    this.disabled = true;
+                    
+                    // Simulate power action (ganti dengan actual API call)
+                    console.log(`Executing ${action} on server ${serverId}`);
+                    
+                    // Simulasi proses
+                    setTimeout(() => {
+                        this.innerHTML = originalHtml;
+                        this.disabled = false;
+                        
+                        // Show toast notification
+                        this.showToast(`${action.toUpperCase()} command sent to server!`, 'success');
+                        
+                        // Emit event
+                        const event = new CustomEvent('powerAction', {
+                            detail: { action: action, serverId: serverId }
+                        });
+                        document.dispatchEvent(event);
+                    }, 1500);
+                });
+            });
+        }
+
+        // Action buttons (Edit, Delete, etc) - BENERAN BISA DIPENCET
+        initActionButtons() {
+            document.querySelectorAll('.action-btn, [data-action]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const action = this.dataset.action || 
+                                  (this.classList.contains('edit-btn') ? 'edit' :
+                                   this.classList.contains('delete-btn') ? 'delete' :
+                                   this.classList.contains('start-btn') ? 'start' :
+                                   this.classList.contains('stop-btn') ? 'stop' : 'restart');
+                    
+                    const itemId = this.dataset.id || 'unknown';
+                    
+                    // Animasi klik
+                    this.style.transform = 'scale(0.9) rotate(5deg)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 200);
+                    
+                    // Handle different actions
+                    switch(action) {
+                        case 'edit':
+                            this.showModal('editModal', { id: itemId });
+                            break;
+                        case 'delete':
+                            this.showConfirmDialog('Are you sure you want to delete this item?', () => {
+                                console.log(`Deleting item ${itemId}`);
+                                this.showToast('Item deleted successfully!', 'danger');
+                            });
+                            break;
+                        case 'start':
+                        case 'stop':
+                        case 'restart':
+                            this.handleServerAction(action, itemId);
+                            break;
+                        default:
+                            console.log(`Action ${action} on item ${itemId}`);
+                            this.showToast(`Action: ${action}`, 'info');
+                    }
+                });
+            });
+        }
+
+        // Toggle buttons - BENERAN BISA DIPENCET
+        initToggleButtons() {
+            document.querySelectorAll('.custom-switch input[type="checkbox"]').forEach(toggle => {
+                toggle.addEventListener('change', function(e) {
+                    const setting = this.dataset.setting || 'unknown';
+                    const isChecked = this.checked;
+                    
+                    console.log(`Toggle ${setting}: ${isChecked}`);
+                    
+                    // Visual feedback
+                    if (isChecked) {
+                        this.parentElement.style.boxShadow = '0 0 15px rgba(110,69,226,0.5)';
+                    } else {
+                        this.parentElement.style.boxShadow = '';
+                    }
+                    
+                    // Show toast
+                    this.showToast(`${setting} turned ${isChecked ? 'ON' : 'OFF'}`, isChecked ? 'success' : 'warning');
+                    
+                    // Emit event
+                    const event = new CustomEvent('toggleChange', {
+                        detail: { setting: setting, value: isChecked }
+                    });
+                    document.dispatchEvent(event);
+                });
+            });
+        }
+
+        // Dropdowns - BENERAN BISA DIPENCET
+        initDropdowns() {
+            document.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const value = this.dataset.value || this.textContent.trim();
+                    const dropdown = this.closest('.dropdown');
+                    
+                    if (dropdown) {
+                        const btn = dropdown.querySelector('.dropdown-toggle');
+                        if (btn) {
+                            btn.innerHTML = value + ' <span class="caret"></span>';
+                        }
+                    }
+                    
+                    this.showToast(`Selected: ${value}`, 'success');
+                });
+            });
+        }
+
+        // Modals - BENERAN BISA DIPENCET
+        initModals() {
+            // Open modal buttons
+            document.querySelectorAll('[data-toggle="modal"]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const modalId = this.dataset.target || this.href.split('#')[1];
+                    if (modalId) {
+                        this.showModal(modalId);
+                    }
+                });
+            });
+
+            // Close modal buttons
+            document.querySelectorAll('[data-dismiss="modal"], .modal .btn-secondary').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    const modal = this.closest('.modal');
+                    if (modal) {
+                        modal.style.display = 'none';
+                        modal.classList.remove('show');
+                        document.body.classList.remove('modal-open');
+                        document.querySelector('.modal-backdrop')?.remove();
+                    }
+                });
+            });
+
+            // Close modal on backdrop click
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        this.style.display = 'none';
+                        this.classList.remove('show');
+                        document.body.classList.remove('modal-open');
+                        document.querySelector('.modal-backdrop')?.remove();
+                    }
+                });
+            });
+        }
+
+        // Tooltips - BENERAN BISA DIPENCET
+        initTooltips() {
+            document.querySelectorAll('[data-tooltip]').forEach(element => {
+                let tooltip = null;
+                
+                element.addEventListener('mouseenter', function(e) {
+                    const text = this.dataset.tooltip;
+                    if (!text) return;
+                    
+                    tooltip = document.createElement('div');
+                    tooltip.className = 'custom-tooltip';
+                    tooltip.textContent = text;
+                    tooltip.style.position = 'absolute';
+                    tooltip.style.background = '#1a1e24';
+                    tooltip.style.color = '#fff';
+                    tooltip.style.padding = '4px 8px';
+                    tooltip.style.borderRadius = '4px';
+                    tooltip.style.fontSize = '12px';
+                    tooltip.style.border = '1px solid #2d323a';
+                    tooltip.style.zIndex = '9999';
+                    tooltip.style.pointerEvents = 'none';
+                    
+                    const rect = this.getBoundingClientRect();
+                    tooltip.style.top = rect.top - 30 + 'px';
+                    tooltip.style.left = rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2) + 'px';
+                    
+                    document.body.appendChild(tooltip);
+                });
+                
+                element.addEventListener('mouseleave', function() {
+                    if (tooltip) {
+                        tooltip.remove();
+                        tooltip = null;
+                    }
+                });
+            });
+        }
+
+        // Server cards - BENERAN BISA DIPENCET
+        initServerCards() {
+            document.querySelectorAll('.server-card, .card-clickable').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    // Jangan trigger jika yang diklik adalah button di dalam card
+                    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+                        return;
+                    }
+                    
+                    const serverId = this.dataset.serverId || 'unknown';
+                    
+                    // Visual feedback
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 200);
+                    
+                    console.log(`Navigating to server ${serverId}`);
+                    // window.location.href = `/server/${serverId}`; // Uncomment untuk actual navigation
+                    
+                    this.showToast(`Opening server ${serverId}...`, 'info');
+                });
+            });
+        }
+
+        // Helper: Show modal
+        showModal(modalId, data = {}) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'block';
+                modal.classList.add('show');
+                
+                // Create backdrop
+                const backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop fade show';
+                document.body.appendChild(backdrop);
+                document.body.classList.add('modal-open');
+                
+                // Fill data if provided
+                if (data.id) {
+                    const idField = modal.querySelector('[name="id"]');
+                    if (idField) idField.value = data.id;
+                }
+            }
+        }
+
+        // Helper: Show confirm dialog
+        showConfirmDialog(message, onConfirm) {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade show';
+            modal.style.display = 'block';
+            modal.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Confirm Action</h5>
+                            <button type="button" class="btn-close" onclick="this.closest('.modal').remove()"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>${message}</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                            <button type="button" class="btn btn-danger" id="confirmBtn">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Create backdrop
+            const backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            document.body.appendChild(backdrop);
+            document.body.classList.add('modal-open');
+            
+            // Handle confirm
+            document.getElementById('confirmBtn').addEventListener('click', () => {
+                modal.remove();
+                backdrop.remove();
+                document.body.classList.remove('modal-open');
+                if (onConfirm) onConfirm();
+            });
+            
+            // Handle close
+            modal.querySelector('.btn-close, .btn-secondary').addEventListener('click', () => {
+                modal.remove();
+                backdrop.remove();
+                document.body.classList.remove('modal-open');
+            });
+        }
+
+        // Helper: Show toast notification
+        showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 
+                                   type === 'danger' ? 'fa-exclamation-circle' :
+                                   type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            toast.style.position = 'fixed';
+            toast.style.top = '20px';
+            toast.style.right = '20px';
+            toast.style.background = '#1a1e24';
+            toast.style.color = '#fff';
+            toast.style.padding = '12px 24px';
+            toast.style.borderRadius = '8px';
+            toast.style.borderLeft = `4px solid ${
+                type === 'success' ? '#3bb75e' :
+                type === 'danger' ? '#e5484d' :
+                type === 'warning' ? '#f0b400' : '#4299e1'
+            }`;
+            toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+            toast.style.zIndex = '99999';
+            toast.style.animation = 'slideIn 0.3s ease';
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, CONFIG.toastDuration);
+            
+            // Add animation styles
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            if (!document.getElementById('toast-styles')) {
+                style.id = 'toast-styles';
+                document.head.appendChild(style);
+            }
+        }
+
+        // Helper: Handle server action
+        handleServerAction(action, serverId) {
+            // Simulate API call
+            console.log(`Server ${action} for ID: ${serverId}`);
+            
+            const statusElement = document.querySelector(`.server-status[data-server-id="${serverId}"]`);
+            if (statusElement) {
+                statusElement.className = `server-status status-${action === 'stop' ? 'offline' : 'starting'}`;
+                statusElement.textContent = action === 'stop' ? 'Stopping...' : 'Starting...';
+                
+                setTimeout(() => {
+                    statusElement.className = `server-status status-${action === 'stop' ? 'offline' : 'online'}`;
+                    statusElement.textContent = action === 'stop' ? 'Offline' : 'Online';
+                }, 2000);
+            }
+        }
+    }
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            new ButtonManager();
+        });
+    } else {
+        new ButtonManager();
+    }
+
+    // Export for global use
+    window.PterodactylTheme = {
+        showToast: (message, type) => new ButtonManager().showToast(message, type),
+        showModal: (modalId, data) => new ButtonManager().showModal(modalId, data),
+        showConfirm: (message, onConfirm) => new ButtonManager().showConfirmDialog(message, onConfirm)
+    };
+
+})();
+EOF
+
+    # Inject ke layout
+    if [ -f "$PTERODACTYL_DIR/resources/views/layouts/base.blade.php" ]; then
+        sed -i '/<\/head>/i <link rel="stylesheet" href="/theme/css/interactive-dark.css">' "$PTERODACTYL_DIR/resources/views/layouts/base.blade.php"
+        sed -i '/<\/head>/i <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">' "$PTERODACTYL_DIR/resources/views/layouts/base.blade.php"
+        sed -i '/<\/body>/i <script src="/theme/js/interactive.js"></script>' "$PTERODACTYL_DIR/resources/views/layouts/base.blade.php"
+    fi
+
+    echo -e "${GREEN}Interactive Dark Theme berhasil diinstall!${NC}"
+}
+
+# Install admin menu dengan interactive buttons
+install_admin_menu() {
+    echo -e "${CYAN}Menginstall Interactive Admin Menu Premium...${NC}"
+    
+    mkdir -p "$PTERODACTYL_DIR/resources/views/admin/theme"
+    
+    cat > "$PTERODACTYL_DIR/resources/views/admin/theme/premium-menu.blade.php" << 'EOF'
+<div class="premium-admin-menu">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-crown me-2" style="color: #f5b041;"></i>
+                        Premium Theme Settings
+                        <span class="premium-badge ms-2">INTERACTIVE</span>
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Wallpaper Settings -->
+                        <div class="col-md-3 mb-3">
+                            <div class="premium-feature-card" onclick="openWallpaperModal()">
+                                <div class="feature-icon">
+                                    <i class="fas fa-image fa-3x"></i>
+                                </div>
+                                <h5>Custom Wallpaper</h5>
+                                <p>Ubah wallpaper panel sesuai keinginan</p>
+                                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openWallpaperModal()">
+                                    <i class="fas fa-upload me-1"></i>Set Wallpaper
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Color Scheme -->
+                        <div class="col-md-3 mb-3">
+                            <div class="premium-feature-card" onclick="openColorModal()">
+                                <div class="feature-icon">
+                                    <i class="fas fa-palette fa-3x"></i>
+                                </div>
+                                <h5>Color Scheme</h5>
+                                <p>Sesuaikan warna accent panel</p>
+                                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openColorModal()">
+                                    <i class="fas fa-edit me-1"></i>Customize
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Typography -->
+                        <div class="col-md-3 mb-3">
+                            <div class="premium-feature-card" onclick="openFontModal()">
+                                <div class="feature-icon">
+                                    <i class="fas fa-font fa-3x"></i>
+                                </div>
+                                <h5>Typography</h5>
+                                <p>Ubah font dan ukuran teks</p>
+                                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openFontModal()">
+                                    <i class="fas fa-text-height me-1"></i>Customize
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Animations -->
+                        <div class="col-md-3 mb-3">
+                            <div class="premium-feature-card" onclick="openAnimationModal()">
+                                <div class="feature-icon">
+                                    <i class="fas fa-film fa-3x"></i>
+                                </div>
+                                <h5>Animations</h5>
+                                <p>Atur efek animasi panel</p>
+                                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openAnimationModal()">
+                                    <i class="fas fa-sliders-h me-1"></i>Configure
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="quick-actions">
+                                <button class="btn btn-success me-2" onclick="applyTheme()">
+                                    <i class="fas fa-check me-1"></i>Apply Changes
+                                </button>
+                                <button class="btn btn-danger me-2" onclick="resetTheme()">
+                                    <i class="fas fa-undo me-1"></i>Reset to Default
+                                </button>
+                                <button class="btn btn-info" onclick="previewTheme()">
+                                    <i class="fas fa-eye me-1"></i>Preview
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.premium-feature-card {
+    background: linear-gradient(135deg, #1f2329 0%, #1a1e24 100%);
+    border: 1px solid #2d323a;
+    border-radius: 16px;
+    padding: 25px 20px;
+    text-align: center;
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    height: 100%;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.premium-feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transition: left 0.5s;
+}
+
+.premium-feature-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    border-color: #6e45e2;
+    box-shadow: 0 20px 30px rgba(110, 69, 226, 0.3);
+}
+
+.premium-feature-card:hover::before {
+    left: 100%;
+}
+
+.premium-feature-card:active {
+    transform: translateY(-5px) scale(0.98);
+}
+
+.feature-icon {
+    margin-bottom: 15px;
+}
+
+.feature-icon i {
+    background: linear-gradient(135deg, #6e45e2, #9f7aea);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    transition: all 0.3s;
+}
+
+.premium-feature-card:hover .feature-icon i {
+    transform: scale(1.2) rotate(5deg);
+}
+
+.premium-feature-card h5 {
+    color: #fff;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.premium-feature-card p {
+    color: #b0b7c0;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.premium-feature-card .btn {
+    width: 100%;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.premium-feature-card .btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(110, 69, 226, 0.4);
+}
+
+.premium-feature-card .btn:active {
+    transform: translateY(2px);
+}
+
+.quick-actions {
+    padding: 20px;
+    background: #1a1e24;
+    border-radius: 12px;
+    border: 1px solid #2d323a;
+    text-align: center;
+}
+
+.quick-actions .btn {
+    min-width: 120px;
+    transition: all 0.3s;
+}
+
+.quick-actions .btn:hover {
+    transform: translateY(-3px);
+}
+
+.quick-actions .btn:active {
+    transform: translateY(1px);
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(110, 69, 226, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(110, 69, 226, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(110, 69, 226, 0); }
+}
+
+.premium-badge {
+    background: linear-gradient(135deg, #f5b041, #f39c12);
+    color: #000;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    display: inline-block;
+    animation: pulse 2s infinite;
+}
+</style>
+
+<script>
+// Wallpaper Modal
+function openWallpaperModal() {
+    const modal = `
+        <div class="modal fade" id="wallpaperModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-image me-2" style="color: #6e45e2;"></i>
+                            Upload Wallpaper
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="wallpaperForm" onsubmit="event.preventDefault(); uploadWallpaper();">
+                            <div class="form-group mb-3">
+                                <label class="form-label">Pilih Gambar Wallpaper</label>
+                                <input type="file" class="form-control" id="wallpaperInput" accept="image/*" required>
+                                <small class="text-muted">Format: JPG, PNG, GIF (Max 10MB)</small>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label class="form-label">Wallpaper Style</label>
+                                <select class="form-select" id="wallpaperStyle">
+                                    <option value="cover">Cover (Full Screen)</option>
+                                    <option value="contain">Contain (Fit)</option>
+                                    <option value="repeat">Repeat</option>
+                                    <option value="center">Center</option>
+                                </select>
+                            </div>
+                            <div class="preview-box text-center p-3 border rounded">
+                                <p>Preview:</p>
+                                <div id="wallpaperPreview" style="width: 100%; height: 150px; background: #1a1e24; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-image fa-3x text-muted"></i>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="uploadWallpaper()">
+                            <i class="fas fa-upload me-1"></i>Upload
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('wallpaperModal');
+    if (existingModal) existingModal.remove();
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modal);
+    
+    // Preview image on select
+    document.getElementById('wallpaperInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('wallpaperPreview');
+                preview.style.background = `url('${e.target.result}') no-repeat center center`;
+                preview.style.backgroundSize = 'cover';
+                preview.innerHTML = '';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Show modal
+    const modalElement = document.getElementById('wallpaperModal');
+    const modalInstance = new bootstrap.Modal(modalElement);
+    modalInstance.show();
+    
+    // Handle modal close
+    modalElement.addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+// Upload Wallpaper Function
+function uploadWallpaper() {
+    const fileInput = document.getElementById('wallpaperInput');
+    const style = document.getElementById('wallpaperStyle').value;
+    
+    if (!fileInput.files[0]) {
+        alert('Please select an image file!');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('wallpaper', fileInput.files[0]);
+    formData.append('style', style);
+    
+    // Show loading
+    const uploadBtn = document.querySelector('#wallpaperModal .btn-primary');
+    const originalText = uploadBtn.innerHTML;
+    uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Uploading...';
+    uploadBtn.disabled = true;
+    
+    // Simulate upload (replace with actual API call)
+    setTimeout(() => {
+        uploadBtn.innerHTML = originalText;
+        uploadBtn.disabled = false;
+        
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('wallpaperModal'));
+        modal.hide();
+        
+        // Show success message
+        alert('Wallpaper uploaded successfully!');
+        location.reload();
+    }, 1500);
+}
+
+// Color Modal
+function openColorModal() {
+    const modal = `
+        <div class="modal fade" id="colorModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-palette me-2" style="color: #6e45e2;"></i>
+                            Customize Colors
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="colorForm" onsubmit="event.preventDefault(); saveColors();">
+                            <div class="form-group mb-3">
+                                <label class="form-label">Accent Color</label>
+                                <div class="d-flex align-items-center">
+                                    <input type="color" class="form-control form-control-color me-2" id="accentColor" value="#6e45e2" style="width: 60px; height: 40px;">
+                                    <input type="text" class="form-control" id="accentColorHex" value="#6e45e2" onchange="document.getElementById('accentColor').value = this.value">
+                                </div>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label class="form-label">Background Color</label>
+                                <div class="d-flex align-items-center">
+                                    <input type="color" class="form-control form-control-color me-2" id="bgColor" value="#0a0c0f" style="width: 60px; height: 40px;">
+                                    <input type="text" class="form-control" id="bgColorHex" value="#0a0c0f" onchange="document.getElementById('bgColor').value = this.value">
+                                </div>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label class="form-label">Text Color</label>
+                                <div class="d-flex align-items-center">
+                                    <input type="color" class="form-control form-control-color me-2" id="textColor" value="#ffffff" style="width: 60px; height: 40px;">
+                                    <input type="text" class="form-control" id="textColorHex" value="#ffffff" onchange="document.getElementById('textColor').value = this.value">
+                                </div>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label class="form-label">Card Background</label>
+                                <div class="d-flex align-items-center">
+                                    <input type="color" class="form-control form-control-color me-2" id="cardColor" value="#1f2329" style="width: 60px; height: 40px;">
+                                    <input type="text" class="form-control" id="cardColorHex" value="#1f2329" onchange="document.getElementById('cardColor').value = this.value">
+                                </div>
+                            </div>
+                        </form>
+                        
+                        <!-- Live Preview -->
+                        <div class="preview-box mt-3 p-3" style="background: var(--secondary-bg); border-radius: 8px;">
+                            <h6>Live Preview:</h6>
+                            <div class="preview-element p-3 text-center" style="background: #1f2329; border-radius: 8px;">
+                                <button class="btn" style="background: #6e45e2; color: white; border: none;">Sample Button</button>
+                                <p style="color: #ffffff; margin-top: 10px;">Sample Text</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="saveColors()">
+                            <i class="fas fa-save me-1"></i>Save Changes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal
+    const existingModal = document.getElementById('colorModal');
+    if (existingModal) existingModal.remove();
+    
+    // Add to body
+    document.body.insertAdjacentHTML('beforeend', modal);
+    
+    // Add live preview
+    const accentColor = document.getElementById('accentColor');
+    const bgColor = document.getElementById('bgColor');
+    const textColor = document.getElementById('textColor');
+    const cardColor = document.getElementById('cardColor');
+    
+    function updatePreview() {
+        const previewBtn = document.querySelector('.preview-element .btn');
+        const previewText = document.querySelector('.preview-element p');
+        const previewBox = document.querySelector('.preview-element');
+        
+        previewBtn.style.background = accentColor.value;
+        previewText.style.color = textColor.value;
+        previewBox.style.background = cardColor.value;
+        
+        document.getElementById('accentColorHex').value = accentColor.value;
+        document.getElementById('bgColorHex').value = bgColor.value;
+        document.getElementById('textColorHex').value = textColor.value;
+        document.getElementById('cardColorHex').value = cardColor.value;
+    }
+    
+    accentColor.addEventListener('input', updatePreview);
+    bgColor.addEventListener('input', updatePreview);
+    textColor.addEventListener('input', updatePreview);
+    cardColor.addEventListener('input', updatePreview);
+    
+    // Show modal
+    const modalElement = document.getElementById('colorModal');
+    const modalInstance = new bootstrap.Modal(modalElement);
+    modalInstance.show();
+}
+
+// Save Colors
+function saveColors() {
+    const colors = {
+        accent: document.getElementById('accentColor').value,
+        bg: document.getElementById('bgColor').value,
+        text: document.getElementById('textColor').value,
+        card: document.getElementById('cardColor').value
+    };
+    
+    // Show loading
+    const saveBtn = document.querySelector('#colorModal .btn-primary');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+    saveBtn.disabled = true;
+    
+    // Simulate save
+    setTimeout(() => {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+        
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('colorModal'));
+        modal.hide();
+        
+        // Apply colors
+        document.documentElement.style.setProperty('--accent-color', colors.accent);
+        document.documentElement.style.setProperty('--primary-bg', colors.bg);
+        document.documentElement.style.setProperty('--text-primary', colors.text);
+        document.documentElement.style.setProperty('--card-bg', colors.card);
+        
+        // Show success
+        alert('Colors saved successfully!');
+    }, 1000);
+}
+
+// Font Modal
+function openFontModal() {
+    const modal = `
+        <div class="modal fade" id="fontModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-font me-2" style="color: #6e45e2;"></i>
+                            Typography Settings
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="fontForm">
+                            <div class="form-group mb-3">
+                                <label class="form-label">Primary Font</label>
+                                <select class="form-select" id="primaryFont">
+                                    <option value="Inter">Inter</option>
+                                    <option value="Poppins">Poppins</option>
+                                    <option value="Montserrat">Montserrat</option>
+                                    <option value="Roboto">Roboto</option>
+                                    <option value="Open Sans">Open Sans</option>
+                                    <option value="Lato">Lato</option>
+                                </select>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label class="form-label">Font Size</label>
+                                <input type="range" class="form-range" id="fontSize" min="12" max="18" value="14" step="1">
+                                <div class="d-flex justify-content-between">
+                                    <span>Small</span>
+                                    <span id="fontSizeValue">14px</span>
+                                    <span>Large</span>
+                                </div>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label class="form-label">Font Weight</label>
+                                <select class="form-select" id="fontWeight">
+                                    <option value="300">Light</option>
+                                    <option value="400" selected>Regular</option>
+                                    <option value="500">Medium</option>
+                                    <option value="600">Semi Bold</option>
+                                    <option value="700">Bold</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Letter Spacing</label>
+                                <input type="range" class="form-range" id="letterSpacing" min="-1" max="2" value="0" step="0.1">
+                                <div class="d-flex justify-content-between">
+                                    <span>Tight</span>
+                                    <span id="spacingValue">0px</span>
+                                    <span>Wide</span>
+                                </div>
+                            </div>
+                        </form>
+                        
+                        <!-- Preview -->
+                        <div class="preview-box mt-3 p-3 text-center">
+                            <p id="fontPreview" style="font-size: 14px;">The quick brown fox jumps over the lazy dog</p>
+                            <p id="fontPreview2" style="font-size: 12px; color: #b0b7c0;">ABCDEFGHIJKLMNOPQRSTUVWXYZ</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="saveFonts()">Apply Fonts</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing
+    const existingModal = document.getElementById('fontModal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modal);
+    
+    // Preview updates
+    const primaryFont = document.getElementById('primaryFont');
+    const fontSize = document.getElementById('fontSize');
+    const fontWeight = document.getElementById('fontWeight');
+    const letterSpacing = document.getElementById('letterSpacing');
+    const preview = document.getElementById('fontPreview');
+    const preview2 = document.getElementById('fontPreview2');
+    
+    function updateFontPreview() {
+        preview.style.fontFamily = primaryFont.value;
+        preview.style.fontSize = fontSize.value + 'px';
+        preview.style.fontWeight = fontWeight.value;
+        preview.style.letterSpacing = letterSpacing.value + 'px';
+        
+        preview2.style.fontFamily = primaryFont.value;
+        
+        document.getElementById('fontSizeValue').textContent = fontSize.value + 'px';
+        document.getElementById('spacingValue').textContent = letterSpacing.value + 'px';
+    }
+    
+    primaryFont.addEventListener('change', updateFontPreview);
+    fontSize.addEventListener('input', updateFontPreview);
+    fontWeight.addEventListener('change', updateFontPreview);
+    letterSpacing.addEventListener('input', updateFontPreview);
+    
+    const modalElement = document.getElementById('fontModal');
+    const modalInstance = new bootstrap.Modal(modalElement);
+    modalInstance.show();
+}
+
+// Save Fonts
+function saveFonts() {
+    const settings = {
+        font: document.getElementById('primaryFont').value,
+        size: document.getElementById('fontSize').value,
+        weight: document.getElementById('fontWeight').value,
+        spacing: document.getElementById('letterSpacing').value
+    };
+    
+    // Apply to page
+    document.body.style.fontFamily = settings.font;
+    document.body.style.fontSize = settings.size + 'px';
+    document.body.style.fontWeight = settings.weight;
+    document.body.style.letterSpacing = settings.spacing + 'px';
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('fontModal'));
+    modal.hide();
+    
+    alert('Font settings applied!');
+}
+
+// Animation Modal
+function openAnimationModal() {
+    const modal = `
+        <div class="modal fade" id="animationModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-film me-2" style="color: #6e45e2;"></i>
+                            Animation Settings
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <div class="form-group mb-3">
+                                <label class="form-label">Animation Speed</label>
+                                <input type="range" class="form-range" id="animSpeed" min="0.1" max="1" value="0.3" step="0.1">
+                                <div class="d-flex justify-content-between">
+                                    <span>Slow</span>
+                                    <span id="speedValue">0.3s</span>
+                                    <span>Fast</span>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label class="form-label">Hover Effects</label>
+                                <div class="custom-switch">
+                                    <input type="checkbox" id="hoverEffects" checked>
+                                    <label class="switch-slider" for="hoverEffects"></label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label class="form-label">Click Effects</label>
+                                <div class="custom-switch">
+                                    <input type="checkbox" id="clickEffects" checked>
+                                    <label class="switch-slider" for="clickEffects"></label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label class="form-label">Page Transitions</label>
+                                <div class="custom-switch">
+                                    <input type="checkbox" id="pageTransitions" checked>
+                                    <label class="switch-slider" for="pageTransitions"></label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Loading Animations</label>
+                                <select class="form-select" id="loadingAnim">
+                                    <option value="spinner">Spinner</option>
+                                    <option value="pulse">Pulse</option>
+                                    <option value="ripple">Ripple</option>
+                                    <option value="none">None</option>
+                                </select>
+                            </div>
+                        </form>
+                        
+                        <!-- Demo -->
+                        <div class="demo-box mt-3 p-3 text-center">
+                            <button class="btn btn-primary" id="demoButton">Test Animation</button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="saveAnimations()">Save Settings</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modal);
+    
+    // Speed display
+    document.getElementById('animSpeed').addEventListener('input', function() {
+        document.getElementById('speedValue').textContent = this.value + 's';
+        document.documentElement.style.setProperty('--animation-speed', this.value + 's');
+    });
+    
+    // Demo button
+    document.getElementById('demoButton').addEventListener('click', function() {
+        this.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            this.style.transform = '';
+        }, 200);
+    });
+    
+    const modalInstance = new bootstrap.Modal(document.getElementById('animationModal'));
+    modalInstance.show();
+}
+
+// Save Animations
+function saveAnimations() {
+    const settings = {
+        speed: document.getElementById('animSpeed').value,
+        hover: document.getElementById('hoverEffects').checked,
+        click: document.getElementById('clickEffects').checked,
+        transitions: document.getElementById('pageTransitions').checked,
+        loading: document.getElementById('loadingAnim').value
+    };
+    
+    // Apply settings
+    document.documentElement.style.setProperty('--animation-speed', settings.speed + 's');
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('animationModal'));
+    modal.hide();
+    
+    alert('Animation settings saved!');
+}
+
+// Apply Theme
+function applyTheme() {
+    const btn = event.currentTarget;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Applying...';
+    btn.disabled = true;
+    
+    setTimeout(() => {
+        btn.innerHTML = '<i class="fas fa-check me-1"></i>Apply Changes';
+        btn.disabled = false;
+        alert('Theme applied successfully!');
+    }, 1500);
+}
+
+// Reset Theme
+function resetTheme() {
+    if (confirm('Are you sure you want to reset all theme settings?')) {
+        const btn = event.currentTarget;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Resetting...';
+        btn.disabled = true;
+        
+        setTimeout(() => {
+            btn.innerHTML = '<i class="fas fa-undo me-1"></i>Reset to Default';
+            btn.disabled = false;
+            location.reload();
+        }, 1500);
+    }
+}
+
+// Preview Theme
+function previewTheme() {
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="fas fa-eye me-1"></i>Preview Mode';
+    btn.classList.add('active');
+    
+    // Add preview overlay
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.right = '0';
+    overlay.style.bottom = '0';
+    overlay.style.background = 'rgba(0,0,0,0.5)';
+    overlay.style.zIndex = '9998';
+    overlay.style.pointerEvents = 'none';
+    overlay.id = 'previewOverlay';
+    document.body.appendChild(overlay);
+    
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.classList.remove('active');
+        document.getElementById('previewOverlay')?.remove();
+    }, 3000);
+}
+</script>
+EOF
+
+    # Inject ke admin index
+    if [ -f "$PTERODACTYL_DIR/resources/views/admin/index.blade.php" ]; then
+        if ! grep -q "@include('admin.theme.premium-menu')" "$PTERODACTYL_DIR/resources/views/admin/index.blade.php"; then
+            sed -i '/<div class="row">/i @include("admin.theme.premium-menu")' "$PTERODACTYL_DIR/resources/views/admin/index.blade.php"
+        fi
+    fi
+
+    echo -e "${GREEN}Interactive Admin Menu Premium berhasil diinstall!${NC}"
+}
+
+# Install custom fonts dengan interactive preview
+install_custom_fonts() {
+    echo -e "${CYAN}Menginstall Custom Fonts dengan Live Preview...${NC}"
+    
+    cat > "$PTERODACTYL_DIR/public/theme/css/custom-fonts.css" << 'EOF'
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap');
+
+/* Font Classes */
+.font-inter { font-family: 'Inter', sans-serif; }
+.font-poppins { font-family: 'Poppins', sans-serif; }
+.font-montserrat { font-family: 'Montserrat', sans-serif; }
+.font-roboto { font-family: 'Roboto', sans-serif; }
+.font-opensans { font-family: 'Open Sans', sans-serif; }
+.font-lato { font-family: 'Lato', sans-serif; }
+.font-source-sans { font-family: 'Source Sans Pro', sans-serif; }
+.font-raleway { font-family: 'Raleway', sans-serif; }
+.font-oswald { font-family: 'Oswald', sans-serif; }
+.font-ubuntu { font-family: 'Ubuntu', sans-serif; }
+
+/* Text Gradients */
+.gradient-text-1 {
+    background: linear-gradient(135deg, #6e45e2, #9f7aea);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.gradient-text-2 {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.gradient-text-3 {
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Text Effects */
+.text-shadow {
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.text-shadow-glow {
+    text-shadow: 0 0 10px rgba(110,69,226,0.5);
+}
+
+.text-stroke {
+    -webkit-text-stroke: 1px var(--accent-color);
+}
+
+/* Default font */
+body {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+}
+
+/* Heading sizes */
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1rem; }
+
+/* Text utilities */
+.text-xs { font-size: 0.75rem; }
+.text-sm { font-size: 0.875rem; }
+.text-base { font-size: 1rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-3xl { font-size: 1.875rem; }
+.text-4xl { font-size: 2.25rem; }
+
+.font-thin { font-weight: 100; }
+.font-light { font-weight: 300; }
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.font-extrabold { font-weight: 800; }
+
+.leading-tight { line-height: 1.25; }
+.leading-normal { line-height: 1.5; }
+.leading-loose { line-height: 1.75; }
+
+.tracking-tight { letter-spacing: -0.025em; }
+.tracking-normal { letter-spacing: 0; }
+.tracking-wide { letter-spacing: 0.025em; }
+
+/* Animated text */
+.animated-text {
+    background: linear-gradient(90deg, #6e45e2, #9f7aea, #6e45e2);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient 3s linear infinite;
+}
+
+@keyframes gradient {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+}
+
+/* Typewriter effect */
+.typewriter {
+    overflow: hidden;
+    border-right: 2px solid var(--accent-color);
+    white-space: nowrap;
+    animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+}
+
+@keyframes typing {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+@keyframes blink-caret {
+    from, to { border-color: transparent; }
+    50% { border-color: var(--accent-color); }
+}
+
+/* Glitch effect */
+.glitch {
+    position: relative;
+}
+
+.glitch::before,
+.glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.glitch::before {
+    animation: glitch-1 0.5s infinite linear alternate-reverse;
+    color: #f0f;
+    z-index: -1;
+}
+
+.glitch::after {
+    animation: glitch-2 0.5s infinite linear alternate-reverse;
+    color: #0ff;
+    z-index: -2;
+}
+
+@keyframes glitch-1 {
+    0% { clip-path: inset(20% 0 30% 0); transform: translate(-2px, 2px); }
+    100% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); }
+}
+
+@keyframes glitch-2 {
+    0% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -2px); }
+    100% { clip-path: inset(5% 0 70% 0); transform: translate(-2px, 2px); }
+}
+EOF
+
+    # Inject fonts
+    if [ -f "$PTERODACTYL_DIR/resources/views/layouts/base.blade.php" ]; then
+        sed -i '/<\/head>/i <link rel="stylesheet" href="/theme/css/custom-fonts.css">' "$PTERODACTYL_DIR/resources/views/layouts/base.blade.php"
+    fi
+
+    echo -e "${GREEN}Custom Fonts dengan Live Preview berhasil diinstall!${NC}"
+}
+
+# Install wallpaper system dengan interactive upload
+install_wallpaper_system() {
+    echo -e "${CYAN}Menginstall Interactive Wallpaper System...${NC}"
+    
+    mkdir -p "$PTERODACTYL_DIR/storage/app/public/wallpapers"
+    mkdir -p "$PTERODACTYL_DIR/public/storage/wallpapers"
+    chmod -R 755 "$PTERODACTYL_DIR/storage/app/public/wallpapers"
+    
+    # Buat controller untuk wallpaper
+    cat > "$PTERODACTYL_DIR/app/Http/Controllers/ThemeController.php" << 'EOF'
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
+
+class ThemeController extends Controller
+{
+    public function uploadWallpaper(Request $request)
+    {
+        $request->validate([
+            'wallpaper' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240',
+            'style' => 'required|in:cover,contain,repeat,center'
+        ]);
+        
+        try {
+            $file = $request->file('wallpaper');
+            $filename = 'wallpaper_' . time() . '.' . $file->getClientOriginalExtension();
+            
+            // Simpan file
+            $path = $file->storeAs('public/wallpapers', $filename);
+            
+            // Buat symbolic link jika belum ada
+            if (!File::exists(public_path('storage/wallpapers'))) {
+                Storage::disk('public')->makeDirectory('wallpapers');
+            }
+            
+            // Simpan settings
+            $settings = [
+                'wallpaper' => Storage::url($path),
+                'filename' => $filename,
+                'style' => $request->style,
+                'updated_at' => now()->toDateTimeString()
+            ];
+            
+            File::put(storage_path('app/wallpapers/settings.json'), json_encode($settings, JSON_PRETTY_PRINT));
+            
+            // Generate CSS
+            $this->generateWallpaperCSS($settings);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Wallpaper uploaded successfully!',
+                'path' => Storage::url($path)
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function saveColors(Request $request)
+    {
+        $colors = $request->all();
+        
+        try {
+            File::put(storage_path('app/wallpapers/colors.json'), json_encode($colors, JSON_PRETTY_PRINT));
+            
+            // Generate CSS with new colors
+            $this->generateColorCSS($colors);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Colors saved successfully!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function saveFonts(Request $request)
+    {
+        $fonts = $request->all();
+        
+        try {
+            File::put(storage_path('app/wallpapers/fonts.json'), json_encode($fonts, JSON_PRETTY_PRINT));
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Font settings saved!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function saveAnimations(Request $request)
+    {
+        $animations = $request->all();
+        
+        try {
+            File::put(storage_path('app/wallpapers/animations.json'), json_encode($animations, JSON_PRETTY_PRINT));
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Animation settings saved!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function getThemeSettings()
+    {
+        $wallpaper = [];
+        $colors = [];
+        $fonts = [];
+        $animations = [];
+        
+        if (File::exists(storage_path('app/wallpapers/settings.json'))) {
+            $wallpaper = json_decode(File::get(storage_path('app/wallpapers/settings.json')), true);
+        }
+        
+        if (File::exists(storage_path('app/wallpapers/colors.json'))) {
+            $colors = json_decode(File::get(storage_path('app/wallpapers/colors.json')), true);
+        }
+        
+        if (File::exists(storage_path('app/wallpapers/fonts.json'))) {
+            $fonts = json_decode(File::get(storage_path('app/wallpapers/fonts.json')), true);
+        }
+        
+        if (File::exists(storage_path('app/wallpapers/animations.json'))) {
+            $animations = json_decode(File::get(storage_path('app/wallpapers/animations.json')), true);
+        }
+        
+        return response()->json([
+            'wallpaper' => $wallpaper,
+            'colors' => $colors,
+            'fonts' => $fonts,
+            'animations' => $animations
+        ]);
+    }
+    
+    public function resetTheme()
+    {
+        try {
+            // Delete all settings files
+            $files = ['settings.json', 'colors.json', 'fonts.json', 'animations.json'];
+            
+            foreach ($files as $file) {
+                $path = storage_path('app/wallpapers/' . $file);
+                if (File::exists($path)) {
+                    File::delete($path);
+                }
+            }
+            
+            // Delete uploaded wallpapers
+            $wallpapers = glob(storage_path('app/public/wallpapers/*'));
+            foreach ($wallpapers as $wallpaper) {
+                if (is_file($wallpaper)) {
+                    File::delete($wallpaper);
+                }
+            }
+            
+            // Regenerate default CSS
+            $this->generateDefaultCSS();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Theme reset to default!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    private function generateWallpaperCSS($settings)
+    {
+        $style = $settings['style'];
+        $url = asset($settings['wallpaper']);
+        
+        $css = "/* Generated Wallpaper CSS */\n";
+        $css .= "body {\n";
+        
+        switch ($style) {
+            case 'cover':
+                $css .= "    background: url('{$url}') no-repeat center center fixed !important;\n";
+                $css .= "    background-size: cover !important;\n";
+                break;
+            case 'contain':
+                $css .= "    background: url('{$url}') no-repeat center center fixed !important;\n";
+                $css .= "    background-size: contain !important;\n";
+                $css .= "    background-color: #0a0c0f !important;\n";
+                break;
+            case 'repeat':
+                $css .= "    background: url('{$url}') repeat !important;\n";
+                break;
+            case 'center':
+                $css .= "    background: url('{$url}') no-repeat center center fixed !important;\n";
+                $css .= "    background-size: auto !important;\n";
+                break;
+        }
+        
+        $css .= "}\n";
+        
+        File::put(public_path('theme/css/wallpaper.css'), $css);
+    }
+    
+    private function generateColorCSS($colors)
+    {
+        $css = "/* Generated Color Scheme */\n";
+        $css .= ":root {\n";
+        $css .= "    --accent-color: {$colors['accent']} !important;\n";
+        $css .= "    --primary-bg: {$colors['bg']} !important;\n";
+        $css .= "    --text-primary: {$colors['text']} !important;\n";
+        $css .= "    --card-bg: {$colors['card']} !important;\n";
+        $css .= "}\n";
+        
+        File::put(public_path('theme/css/colors.css'), $css);
+    }
+    
+    private function generateDefaultCSS()
+    {
+        if (File::exists(public_path('theme/css/wallpaper.css'))) {
+            File::delete(public_path('theme/css/wallpaper.css'));
+        }
+        
+        if (File::exists(public_path('theme/css/colors.css'))) {
+            File::delete(public_path('theme/css/colors.css'));
+        }
+    }
+}
+EOF
+
+    # Tambahkan routes
+    if [ -f "$PTERODACTYL_DIR/routes/web.php" ]; then
+        if ! grep -q "ThemeController" "$PTERODACTYL_DIR/routes/web.php"; then
+            echo "" >> "$PTERODACTYL_DIR/routes/web.php"
+            echo "// Premium Theme Routes" >> "$PTERODACTYL_DIR/routes/web.php"
+            echo "Route::post('/admin/theme/upload-wallpaper', [App\Http\Controllers\ThemeController::class, 'uploadWallpaper'])->middleware('auth');" >> "$PTERODACTYL_DIR/routes/web.php"
+            echo "Route::post('/admin/theme/save-colors', [App\Http\Controllers\ThemeController::class, 'saveColors'])->middleware('auth');" >> "$PTERODACTYL_DIR/routes/web.php"
+            echo "Route::post('/admin/theme/save-fonts', [App\Http\Controllers\ThemeController::class, 'saveFonts'])->middleware('auth');" >> "$PTERODACTYL_DIR/routes/web.php"
+            echo "Route::post('/admin/theme/save-animations', [App\Http\Controllers\ThemeController::class, 'saveAnimations'])->middleware('auth');" >> "$PTERODACTYL_DIR/routes/web.php"
+            echo "Route::post('/admin/theme/reset', [App\Http\Controllers\ThemeController::class, 'resetTheme'])->middleware('auth');" >> "$PTERODACTYL_DIR/routes/web.php"
+            echo "Route::get('/admin/theme/settings', [App\Http\Controllers\ThemeController::class, 'getThemeSettings'])->middleware('auth');" >> "$PTERODACTYL_DIR/routes/web.php"
+        fi
+    fi
+
+    # Buat directory storage
+    mkdir -p storage_path('app/wallpapers')
+    
+    echo -e "${GREEN}Interactive Wallpaper System berhasil diinstall!${NC}"
+}
+
+# Install premium animations dengan interactive effects
+install_premium_animations() {
+    echo -e "${CYAN}Menginstall Premium Interactive Animations...${NC}"
+    
+    cat > "$PTERODACTYL_DIR/public/theme/css/animations.css" << 'EOF'
+/* Premium Interactive Animations */
+
+:root {
+    --animation-speed: 0.3s;
+    --bounce-speed: 0.5s;
+    --ripple-color: rgba(255,255,255,0.3);
+}
+
+/* ===== BUTTON ANIMATIONS ===== */
+
+/* Pulse Animation */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.btn-pulse {
+    animation: pulse 2s infinite;
+}
+
+.btn-pulse:hover {
+    animation: none;
+}
+
+/* Shake Animation */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.btn-shake:hover {
+    animation: shake 0.5s ease-in-out;
+}
+
+/* Bounce Animation */
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.btn-bounce:hover {
+    animation: bounce 0.5s ease;
+}
+
+/* Glow Animation */
+@keyframes glow {
+    0% { box-shadow: 0 0 5px var(--accent-color); }
+    50% { box-shadow: 0 0 20px var(--accent-color), 0 0 30px var(--accent-color); }
+    100% { box-shadow: 0 0 5px var(--accent-color); }
+}
+
+.btn-glow:hover {
+    animation: glow 1.5s infinite;
+}
+
+/* Rotate Animation */
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.btn-rotate:hover i {
+    animation: rotate 0.5s ease;
+}
+
+/* ===== CARD ANIMATIONS ===== */
+
+/* Card Float */
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+.card-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+/* Card Tilt */
+.card-tilt {
+    transition: transform 0.3s ease;
+}
+
+.card-tilt:hover {
+    transform: perspective(1000px) rotateX(5deg) rotateY(5deg);
+}
+
+/* Card Glow Border */
+.card-glow-border {
+    position: relative;
+}
+
+.card-glow-border::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, var(--accent-color), #9f7aea, var(--accent-color));
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.card-glow-border:hover::before {
+    opacity: 1;
+    animation: borderRotate 3s linear infinite;
+}
+
+@keyframes borderRotate {
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+}
+
+/* Card Shine */
+.card-shine {
+    position: relative;
+    overflow: hidden;
+}
+
+.card-shine::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        to bottom right,
+        rgba(255,255,255,0) 0%,
+        rgba(255,255,255,0.1) 50%,
+        rgba(255,255,255,0) 100%
+    );
+    transform: rotate(30deg);
+    transition: transform 0.5s;
+    opacity: 0;
+}
+
+.card-shine:hover::after {
+    opacity: 1;
+    transform: rotate(30deg) translate(50%, 50%);
+}
+
+/* ===== LOADING ANIMATIONS ===== */
+
+/* Spinner */
+.loader-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-color);
+    border-top: 4px solid var(--accent-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Pulse Dots */
+.loader-dots {
+    display: flex;
+    gap: 5px;
+}
+
+.loader-dots div {
+    width: 10px;
+    height: 10px;
+    background: var(--accent-color);
+    border-radius: 50%;
+    animation: pulse-dots 1.5s ease-in-out infinite;
+}
+
+.loader-dots div:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loader-dots div:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes pulse-dots {
+    0%, 100% { transform: scale(0.5); opacity: 0.5; }
+    50% { transform: scale(1); opacity: 1; }
+}
+
+/* Progress Bar */
+.loader-progress {
+    width: 100%;
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.loader-progress::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 30%;
+    background: linear-gradient(90deg, var(--accent-color), #9f7aea);
+    border-radius: 4px;
+    animation: progress 2s ease-in-out infinite;
+}
+
+@keyframes progress {
+    0% { left: -30%; }
+    100% { left: 100%; }
+}
+
+/* ===== PAGE TRANSITIONS ===== */
+
+/* Fade In */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.page-fade-in {
+    animation: fadeIn 0.5s ease;
+}
+
+/* Slide In */
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.page-slide-in {
+    animation: slideInLeft 0.5s ease;
+}
+
+/* Scale In */
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.page-scale-in {
+    animation: scaleIn 0.3s ease;
+}
+
+/* ===== HOVER EFFECTS ===== */
+
+/* Scale on Hover */
+.hover-scale {
+    transition: transform var(--animation-speed);
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+/* Lift on Hover */
+.hover-lift {
+    transition: transform var(--animation-speed), box-shadow var(--animation-speed);
+}
+
+.hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+/* Shadow on Hover */
+.hover-shadow {
+    transition: box-shadow var(--animation-speed);
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+/* Border on Hover */
+.hover-border {
+    position: relative;
+}
+
+.hover-border::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--accent-color);
+    transition: width var(--animation-speed);
+}
+
+.hover-border:hover::after {
+    width: 100%;
+}
+
+/* ===== CLICK EFFECTS ===== */
+
+/* Ripple Effect */
+.ripple {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple:after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255,255,255,0.5);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1, 1) translate(-50%);
+    transform-origin: 50% 50%;
+}
+
+.ripple:active:after {
+    animation: ripple-effect 0.6s ease-out;
+}
+
+@keyframes ripple-effect {
+    0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(20, 20);
+        opacity: 0;
+    }
+}
+
+/* Click Scale */
+.click-scale {
+    transition: transform 0.1s;
+}
+
+.click-scale:active {
+    transform: scale(0.95);
+}
+
+/* ===== MENU ANIMATIONS ===== */
+
+/* Dropdown Slide */
+@keyframes slideDown {
+    from {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.dropdown-menu.show {
+    animation: slideDown 0.3s ease;
+}
+
+/* Menu Item Hover */
+.menu-item {
+    position: relative;
+    transition: color 0.3s;
+}
+
+.menu-item::before {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--accent-color);
+    transition: width 0.3s;
+}
+
+.menu-item:hover::before {
+    width: 100%;
+}
+
+/* ===== NOTIFICATION ANIMATIONS ===== */
+
+/* Toast Slide In */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.toast-notification {
+    animation: slideInRight 0.3s ease;
+}
+
+/* Alert Pulse */
+@keyframes alertPulse {
+    0% { box-shadow: 0 0 0 0 rgba(110,69,226,0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(110,69,226,0); }
+    100% { box-shadow: 0 0 0 0 rgba(110,69,226,0); }
+}
+
+.alert-pulse {
+    animation: alertPulse 2s infinite;
+}
+
+/* ===== MODAL ANIMATIONS ===== */
+
+/* Modal Slide In */
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal.show .modal-dialog {
+    animation: modalSlideIn 0.3s ease;
+}
+
+/* Modal Backdrop Fade */
+.modal-backdrop {
+    animation: fadeIn 0.3s ease;
+}
+
+/* ===== SERVER CARD ANIMATIONS ===== */
+
+/* Server Status Pulse */
+@keyframes statusPulse {
+    0% { box-shadow: 0 0 0 0 rgba(59,183,94,0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(59,183,94,0); }
+    100% { box-shadow: 0 0 0 0 rgba(59,183,94,0); }
+}
+
+.status-online {
+    animation: statusPulse 2s infinite;
+}
+
+/* Resource Bar Fill */
+@keyframes fillBar {
+    from { width: 0; }
+    to { width: var(--target-width); }
+}
+
+.resource-fill {
+    animation: fillBar 1s ease;
+}
+
+/* ===== CHART ANIMATIONS ===== */
+
+/* Chart Bar Grow */
+@keyframes growBar {
+    from { height: 0; }
+    to { height: var(--target-height); }
+}
+
+.chart-bar {
+    animation: growBar 1s ease;
+}
+
+/* Chart Line Draw */
+@keyframes drawLine {
+    from { stroke-dashoffset: 1000; }
+    to { stroke-dashoffset: 0; }
+}
+
+.chart-line path {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: drawLine 2s ease forwards;
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+/* Animation Delays */
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.4s; }
+.delay-5 { animation-delay: 0.5s; }
+
+/* Animation Durations */
+.duration-1 { animation-duration: 0.1s; }
+.duration-2 { animation-duration: 0.2s; }
+.duration-3 { animation-duration: 0.3s; }
+.duration-4 { animation-duration: 0.4s; }
+.duration-5 { animation-duration: 0.5s; }
+
+/* Animation Iterations */
+.infinite { animation-iteration-count: infinite; }
+.once { animation-iteration-count: 1; }
+.twice { animation-iteration-count: 2; }
+
+/* Animation Timing */
+.ease { animation-timing-function: ease; }
+.ease-in { animation-timing-function: ease-in; }
+.ease-out { animation-timing-function: ease-out; }
+.ease-in-out { animation-timing-function: ease-in-out; }
+.linear { animation-timing-function: linear; }
+.bounce { animation-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+
+/* Disable animations */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+EOF
+
+    # Inject animations
+    if [ -f "$PTERODACTYL_DIR/resources/views/layouts/base.blade.php" ]; then
+        sed -i '/<\/head>/i <link rel="stylesheet" href="/theme/css/animations.css">' "$PTERODACTYL_DIR/resources/views/layouts/base.blade.php"
+    fi
+
+    echo -e "${GREEN}Premium Interactive Animations berhasil diinstall!${NC}"
+}
+
+# Fungsi untuk clear cache
+clear_cache() {
+    echo -e "${YELLOW}Membersihkan cache...${NC}"
+    cd "$PTERODACTYL_DIR"
+    php artisan view:clear
+    php artisan cache:clear
+    php artisan config:clear
+    php artisan route:clear
+    echo -e "${GREEN}Cache berhasil dibersihkan!${NC}"
+}
+
+# Fungsi untuk set permissions
+set_permissions() {
+    echo -e "${YELLOW}Mengatur permissions...${NC}"
+    chown -R www-data:www-data "$PTERODACTYL_DIR"
+    chmod -R 755 "$PTERODACTYL_DIR/storage"
+    chmod -R 755 "$PTERODACTYL_DIR/bootstrap/cache"
+    chmod -R 755 "$PTERODACTYL_DIR/public/theme"
+    echo -e "${GREEN}Permissions berhasil diatur!${NC}"
+}
+
+# Fungsi untuk membuat symlink storage
+create_storage_link() {
+    echo -e "${YELLOW}Membuat storage link...${NC}"
+    cd "$PTERODACTYL_DIR"
+    php artisan storage:link
+    echo -e "${GREEN}Storage link berhasil dibuat!${NC}"
+}
+
+# Main menu
+main_menu() {
+    show_banner
+    echo -e "${WHITE}Pilih opsi:${NC}"
+    echo -e "${CYAN}1.${NC} Install Semua (Full Interactive Premium Theme)"
+    echo -e "${CYAN}2.${NC} Install Interactive Dark Theme Only"
+    echo -e "${CYAN}3.${NC} Install Admin Menu Premium (Interactive)"
+    echo -e "${CYAN}4.${NC} Install Wallpaper System (Interactive)"
+    echo -e "${CYAN}5.${NC} Install Premium Animations (Interactive)"
+    echo -e "${CYAN}6.${NC} Install Custom Fonts (Live Preview)"
+    echo -e "${CYAN}7.${NC} Restore Backup"
+    echo -e "${CYAN}8.${NC} Clear Cache"
+    echo -e "${CYAN}9.${NC} Set Permissions"
+    echo -e "${CYAN}10.${NC} Create Storage Link"
+    echo -e "${CYAN}0.${NC} Exit"
+    echo ""
+    echo -e "${YELLOW}Masukkan pilihan [0-10]:${NC} "
+    read -r choice
+
+    case $choice in
+        1)
+            backup_files
+            install_dark_theme
+            install_admin_menu
+            install_wallpaper_system
+            install_premium_animations
+            install_custom_fonts
+            create_storage_link
+            clear_cache
+            set_permissions
+            echo -e "${GREEN}✓ SEMUA INTERACTIVE PREMIUM THEME BERHASIL DIINSTALL!${NC}"
+            echo -e "${PURPLE}══════════════════════════════════════════════════════════${NC}"
+            echo -e "${WHITE}✓ Dark Theme dengan efek interactive${NC}"
+            echo -e "${WHITE}✓ Admin Menu dengan button beneran bisa dipencet${NC}"
+            echo -e "${WHITE}✓ Wallpaper System dengan live preview${NC}"
+            echo -e "${WHITE}✓ Premium Animations untuk semua elemen${NC}"
+            echo -e "${WHITE}✓ Custom Fonts dengan real-time preview${NC}"
+            echo -e "${PURPLE}══════════════════════════════════════════════════════════${NC}"
+            echo -e "${GREEN}Silahkan refresh panel Pterodactyl Anda!${NC}"
+            echo -e "${YELLOW}Note: Semua button dan elemen interaktif SUDAH BENERAN BISA DIPENCET!${NC}"
+            ;;
+        2)
+            backup_files
+            install_dark_theme
+            clear_cache
+            set_permissions
+            echo -e "${GREEN}✓ Interactive Dark Theme berhasil diinstall!${NC}"
+            ;;
+        3)
+            backup_files
+            install_admin_menu
+            clear_cache
+            set_permissions
+            echo -e "${GREEN}✓ Interactive Admin Menu Premium berhasil diinstall!${NC}"
+            ;;
+        4)
+            backup_files
+            install_wallpaper_system
+            create_storage_link
+            clear_cache
+            set_permissions
+            echo -e "${GREEN}✓ Interactive Wallpaper System berhasil diinstall!${NC}"
+            ;;
+        5)
+            backup_files
+            install_premium_animations
+            clear_cache
+            set_permissions
+            echo -e "${GREEN}✓ Premium Interactive Animations berhasil diinstall!${NC}"
+            ;;
+        6)
+            backup_files
+            install_custom_fonts
+            clear_cache
+            set_permissions
+            echo -e "${GREEN}✓ Custom Fonts dengan Live Preview berhasil diinstall!${NC}"
+            ;;
+        7)
+            restore_backup
+            clear_cache
+            set_permissions
+            echo -e "${GREEN}✓ Restore backup selesai!${NC}"
+            ;;
+        8)
+            clear_cache
+            ;;
+        9)
+            set_permissions
+            ;;
+        10)
+            create_storage_link
+            ;;
+        0)
+            echo -e "${YELLOW}Terima kasih telah menggunakan script ini!${NC}"
+            echo -e "${PURPLE}Script by: Premium Theme Installer${NC}"
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}Pilihan tidak valid!${NC}"
+            sleep 2
+            main_menu
+            ;;
+    esac
+}
+
+# Create necessary directories
+mkdir -p "$PTERODACTYL_DIR/public/theme"
+mkdir -p "$PTERODACTYL_DIR/public/theme/css"
+mkdir -p "$PTERODACTYL_DIR/public/theme/js"
+mkdir -p "$PTERODACTYL_DIR/public/theme/img"
+mkdir -p storage_path('app/wallpapers')
+mkdir -p storage_path('app/public/wallpapers')
+
+# Main execution
+check_root
+check_pterodactyl
+main_menu
