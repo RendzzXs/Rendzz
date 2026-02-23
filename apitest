@@ -1,0 +1,470 @@
+#!/bin/bash
+
+# ==============================================
+# DIGITALOCEAN API KEY MANAGER
+# Untuk VPS Reseller Bot
+# ==============================================
+
+# Warna untuk output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+WHITE='\033[1;37m'
+NC='\033[0m' # No Color
+
+# Konfigurasi
+BOT_DIR="/root/bot"  # Sesuaikan dengan direktori bot Anda
+BOT_FILE="index.js"
+LOG_FILE="key_manager.log"
+
+# ==============================================
+# FUNGSI-FUNGSI
+# ==============================================
+
+# Fungsi untuk menulis log
+log_message() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
+    echo -e "${CYAN}[INFO]${NC} $1"
+}
+
+# Fungsi untuk error
+error_message() {
+    echo -e "${RED}[ERROR]${NC} $1"
+    log_message "ERROR: $1"
+}
+
+# Fungsi untuk success
+success_message() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    log_message "SUCCESS: $1"
+}
+
+# Fungsi untuk warning
+warning_message() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+    log_message "WARNING: $1"
+}
+
+# Fungsi untuk mengecek apakah user adalah root
+check_root() {
+    if [[ $EUID -ne 0 ]]; then
+        error_message "Script ini harus dijalankan sebagai root!"
+        exit 1
+    fi
+}
+
+# Fungsi untuk mengecek direktori bot
+check_bot_dir() {
+    if [ ! -d "$BOT_DIR" ]; then
+        warning_message "Direktori $BOT_DIR tidak ditemukan!"
+        echo -n "Masukkan direktori bot Anda: "
+        read -r BOT_DIR
+    fi
+    
+    if [ ! -f "$BOT_DIR/$BOT_FILE" ]; then
+        error_message "File $BOT_FILE tidak ditemukan di $BOT_DIR"
+        echo "Mencari file bot di seluruh sistem..."
+        BOT_FILE=$(find / -name "*.js" -exec grep -l "DIGITALOCEAN_TOKEN" {} \; 2>/dev/null | head -1)
+        
+        if [ -n "$BOT_FILE" ]; then
+            BOT_DIR=$(dirname "$BOT_FILE")
+            BOT_FILE=$(basename "$BOT_FILE")
+            success_message "Ditemukan file bot: $BOT_FILE di $BOT_DIR"
+        else
+            error_message "Tidak dapat menemukan file bot!"
+            exit 1
+        fi
+    fi
+}
+
+# Fungsi untuk mengecek token yang sudah ada
+check_existing_token() {
+    echo -e "\n${BLUE}🔍 MENCARI TOKEN YANG ADA...${NC}\n"
+    
+    # Cek di file bot
+    if [ -f "$BOT_DIR/$BOT_FILE" ]; then
+        TOKEN=$(grep -oP "DIGITALOCEAN_TOKEN = ['\"]\K[^'\"]+" "$BOT_DIR/$BOT_FILE" 2>/dev/null)
+        if [ -n "$TOKEN" ]; then
+            success_message "Token ditemukan di file bot:"
+            echo -e "${YELLOW}Token:${NC} ${TOKEN:0:20}...${TOKEN: -10}"
+            echo -e "${YELLOW}Lokasi:${NC} $BOT_DIR/$BOT_FILE"
+        fi
+    fi
+    
+    # Cek di environment variables
+    ENV_TOKEN=$(env | grep -i "DIGITAL\|DO_TOKEN" | head -1)
+    if [ -n "$ENV_TOKEN" ]; then
+        success_message "Token ditemukan di environment:"
+        echo -e "${YELLOW}${ENV_TOKEN}${NC}"
+    fi
+    
+    # Cek di file .env
+    if [ -f "$BOT_DIR/.env" ]; then
+        ENV_FILE_TOKEN=$(grep -i "DIGITAL\|DO_TOKEN" "$BOT_DIR/.env" 2>/dev/null)
+        if [ -n "$ENV_FILE_TOKEN" ]; then
+            success_message "Token ditemukan di file .env:"
+            echo -e "${YELLOW}${ENV_FILE_TOKEN}${NC}"
+        fi
+    fi
+}
+
+# Fungsi untuk melihat semua droplet
+view_droplets() {
+    echo -e "\n${BLUE}🖥️  MELIHAT DAFTAR DROPLET${NC}\n"
+    
+    if [ -z "$TOKEN" ]; then
+        error_message "Token tidak ditemukan!"
+        return 1
+    fi
+    
+    echo -e "${YELLOW}Mengambil data droplet...${NC}"
+    
+    # Menggunakan curl untuk mengambil daftar droplet
+    RESPONSE=$(curl -s -X GET "https://api.digitalocean.com/v2/droplets" \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "Content-Type: application/json")
+    
+    # Cek apakah ada error
+    if echo "$RESPONSE" | grep -q "error"; then
+        error_message "Gagal mengambil data:"
+        echo "$RESPONSE" | jq '.' 2>/dev/null || echo "$RESPONSE"
+        return 1
+    fi
+    
+    # Parse JSON dengan jq jika ada
+    if command -v jq &> /dev/null; then
+        TOTAL=$(echo "$RESPONSE" | jq '.droplets | length')
+        echo -e "${GREEN}Total Droplet: $TOTAL${NC}\n"
+        
+        if [ "$TOTAL" -gt 0 ]; then
+            echo "$RESPONSE" | jq -r '.droplets[] | "📌 \(.name)\n   ID: \(.id)\n   IP: \(.networks.v4[] | select(.type=="public") | .ip_address // "N/A")\n   RAM: \(.memory)MB\n   Status: \(.status)\n---"'
+        else
+            warning_message "Tidak ada droplet aktif"
+        fi
+    else
+        # Fallback jika jq tidak ada
+        echo "$RESPONSE" | grep -o '"name":"[^"]*"' | cut -d'"' -f4
+    fi
+}
+
+# Fungsi untuk membuat token baru
+create_new_token() {
+    echo -e "\n${BLUE}🔑 MEMBUAT TOKEN BARU${NC}\n"
+    
+    echo -e "${YELLOW}Pilih metode:${NC}"
+    echo "1) Buat via Web Browser (Rekomendasi)"
+    echo "2) Buat via API (Butuh token lama)"
+    echo "3) Generate random token (Manual input)"
+    read -p "Pilihan [1-3]: " METHOD
+    
+    case $METHOD in
+        1)
+            echo -e "\n${GREEN}📝 CARA MEMBUAT TOKEN VIA WEB:${NC}"
+            echo "1. Buka https://cloud.digitalocean.com/account/api"
+            echo "2. Login dengan akun DigitalOcean Anda"
+            echo "3. Klik 'Generate New Token'"
+            echo "4. Beri nama: 'Telegram Bot VPS'"
+            echo "5. Pilih scope: 'Full Access' atau 'Write'"
+            echo "6. Copy token yang muncul"
+            echo "7. Paste token di sini nanti"
+            ;;
+        2)
+            echo -e "\n${YELLOW}Masukkan token lama Anda:${NC}"
+            read -s OLD_TOKEN
+            if [ -n "$OLD_TOKEN" ]; then
+                echo -e "\n${YELLOW}Mencoba membuat token baru via API...${NC}"
+                
+                # Install doctl jika belum ada
+                if ! command -v doctl &> /dev/null; then
+                    echo "Menginstall doctl..."
+                    curl -sL https://github.com/digitalocean/doctl/releases/download/v1.98.0/doctl-1.98.0-linux-amd64.tar.gz | tar -xzv
+                    mv doctl /usr/local/bin/
+                fi
+                
+                # Setup doctl dengan token lama
+                doctl auth init --access-token "$OLD_TOKEN" 2>/dev/null
+                
+                # Buat token baru
+                NEW_TOKEN=$(doctl auth token create --name "Telegram-Bot-$(date +%Y%m%d)" --scope "read write" 2>/dev/null | grep -o "dop_v1_[a-zA-Z0-9]*")
+                
+                if [ -n "$NEW_TOKEN" ]; then
+                    success_message "Token baru berhasil dibuat!"
+                    TOKEN="$NEW_TOKEN"
+                    echo -e "${GREEN}Token baru:${NC} $TOKEN"
+                else
+                    error_message "Gagal membuat token baru via API"
+                    return 1
+                fi
+            fi
+            ;;
+        3)
+            echo -e "\n${YELLOW}Masukkan token baru Anda (format: dop_v1_...):${NC}"
+            read TOKEN
+            if [[ ! "$TOKEN" =~ ^dop_v1_ ]]; then
+                warning_message "Token biasanya dimulai dengan 'dop_v1_'"
+            fi
+            ;;
+        *)
+            error_message "Pilihan tidak valid!"
+            return 1
+            ;;
+    esac
+}
+
+# Fungsi untuk update token di file bot
+update_token_in_bot() {
+    echo -e "\n${BLUE}📝 UPDATE TOKEN DI FILE BOT${NC}\n"
+    
+    if [ -z "$TOKEN" ]; then
+        error_message "Token tidak boleh kosong!"
+        return 1
+    fi
+    
+    # Backup file
+    cp "$BOT_DIR/$BOT_FILE" "$BOT_DIR/$BOT_FILE.backup.$(date +%Y%m%d_%H%M%S)"
+    success_message "Backup file dibuat"
+    
+    # Update token
+    sed -i "s/DIGITALOCEAN_TOKEN = ['\"][^'\"]*['\"]/DIGITALOCEAN_TOKEN = '$TOKEN'/" "$BOT_DIR/$BOT_FILE"
+    
+    if [ $? -eq 0 ]; then
+        success_message "Token berhasil diupdate di file bot"
+        
+        # Tampilkan hasil update
+        echo -e "\n${YELLOW}Isi file setelah update:${NC}"
+        grep "DIGITALOCEAN_TOKEN" "$BOT_DIR/$BOT_FILE"
+    else
+        error_message "Gagal mengupdate token"
+    fi
+}
+
+# Fungsi untuk restart bot
+restart_bot() {
+    echo -e "\n${BLUE}🔄 RESTART BOT${NC}\n"
+    
+    # Cek apakah menggunakan PM2
+    if command -v pm2 &> /dev/null && pm2 list | grep -q "bot"; then
+        echo "Menggunakan PM2..."
+        pm2 restart bot
+        pm2 save
+    else
+        # Cek proses node
+        PIDS=$(pgrep -f "node.*$BOT_FILE")
+        if [ -n "$PIDS" ]; then
+            echo "Mematikan proses lama: $PIDS"
+            kill $PIDS
+            sleep 2
+        fi
+        
+        # Start ulang
+        echo "Menjalankan bot..."
+        cd "$BOT_DIR"
+        nohup node "$BOT_FILE" > bot.log 2>&1 &
+        success_message "Bot dijalankan dengan PID: $!"
+    fi
+    
+    # Cek status
+    sleep 3
+    if pgrep -f "node.*$BOT_FILE" > /dev/null; then
+        success_message "Bot berjalan dengan baik"
+    else
+        error_message "Bot gagal berjalan, cek log"
+        tail -20 "$BOT_DIR/bot.log" 2>/dev/null || echo "Log tidak ditemukan"
+    fi
+}
+
+# Fungsi untuk test token
+test_token() {
+    echo -e "\n${BLUE}🧪 TEST TOKEN${NC}\n"
+    
+    if [ -z "$TOKEN" ]; then
+        error_message "Token tidak ditemukan!"
+        return 1
+    fi
+    
+    echo -e "${YELLOW}Menguji token...${NC}"
+    
+    # Test dengan mengambil account info
+    RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X GET "https://api.digitalocean.com/v2/account" \
+        -H "Authorization: Bearer $TOKEN")
+    
+    if [ "$RESPONSE" -eq 200 ]; then
+        success_message "Token VALID! Koneksi ke DigitalOcean berhasil"
+        
+        # Ambil info account
+        ACCOUNT=$(curl -s -X GET "https://api.digitalocean.com/v2/account" \
+            -H "Authorization: Bearer $TOKEN")
+        
+        if command -v jq &> /dev/null; then
+            EMAIL=$(echo "$ACCOUNT" | jq -r '.account.email')
+            DROPLET_LIMIT=$(echo "$ACCOUNT" | jq -r '.account.droplet_limit')
+            echo -e "Email: $EMAIL"
+            echo -e "Droplet Limit: $DROPLET_LIMIT"
+        fi
+        
+        return 0
+    elif [ "$RESPONSE" -eq 401 ]; then
+        error_message "Token TIDAK VALID! Unauthorized"
+        return 1
+else
+        error_message "Error: HTTP $RESPONSE"
+        return 1
+    fi
+}
+
+# Fungsi untuk menyimpan token ke environment
+save_to_environment() {
+    echo -e "\n${BLUE}🔧 MENYIMPAN KE ENVIRONMENT${NC}\n"
+    
+    if [ -z "$TOKEN" ]; then
+        error_message "Token tidak boleh kosong!"
+        return 1
+    fi
+    
+    # Simpan ke /etc/environment
+    echo "DIGITALOCEAN_TOKEN=\"$TOKEN\"" >> /etc/environment
+    success_message "Token disimpan di /etc/environment"
+    
+    # Simpan ke .bashrc
+    echo "export DIGITALOCEAN_TOKEN=\"$TOKEN\"" >> ~/.bashrc
+    success_message "Token disimpan di ~/.bashrc"
+    
+    # Reload
+    source /etc/environment 2>/dev/null
+    source ~/.bashrc 2>/dev/null
+}
+
+# Fungsi untuk install dependencies
+install_dependencies() {
+    echo -e "\n${BLUE}📦 INSTALL DEPENDENCIES${NC}\n"
+    
+    # Install jq untuk parsing JSON
+    if ! command -v jq &> /dev/null; then
+        echo "Menginstall jq..."
+        apt-get update -qq
+        apt-get install -y jq
+    fi
+    
+    # Install curl jika belum
+    if ! command -v curl &> /dev/null; then
+        echo "Menginstall curl..."
+        apt-get install -y curl
+    fi
+    
+    success_message "Dependencies terinstall"
+}
+
+# Fungsi untuk monitoring token
+monitor_token() {
+    echo -e "\n${BLUE}📊 MONITORING TOKEN${NC}\n"
+    
+    while true; do
+        clear
+        echo -e "${BLUE}=================================${NC}"
+        echo -e "${WHITE}   MONITORING TOKEN AKTIF${NC}"
+        echo -e "${BLUE}=================================${NC}\n"
+        
+        # Test token
+        if [ -n "$TOKEN" ]; then
+            echo -e "${YELLOW}Token:${NC} ${TOKEN:0:20}...${TOKEN: -10}"
+            
+            # Cek status
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X GET "https://api.digitalocean.com/v2/account" \
+                -H "Authorization: Bearer $TOKEN" 2>/dev/null)
+            
+            if [ "$RESPONSE" -eq 200 ]; then
+                echo -e "${GREEN}Status: AKTIF ✓${NC}"
+                
+                # Hitung droplets
+                DROPLETS=$(curl -s -X GET "https://api.digitalocean.com/v2/droplets" \
+                    -H "Authorization: Bearer $TOKEN" 2>/dev/null)
+                
+                if command -v jq &> /dev/null; then
+                    COUNT=$(echo "$DROPLETS" | jq '.droplets | length')
+                    echo -e "Droplet Aktif: $COUNT"
+                fi
+            else
+                echo -e "${RED}Status: TIDAK AKTIF ✗${NC}"
+            fi
+        else
+            echo -e "${RED}Token tidak tersedia${NC}"
+        fi
+        
+        echo -e "\n${YELLOW}Refresh setiap 10 detik... (Ctrl+C untuk keluar)${NC}"
+        sleep 10
+    done
+}
+
+# ==============================================
+# MENU UTAMA
+# ==============================================
+
+show_menu() {
+    clear
+    echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║   DIGITALOCEAN API KEY MANAGER        ║${NC}"
+    echo -e "${BLUE}║      VPS Reseller Bot Tool            ║${NC}"
+    echo -e "${BLUE}╚════════════════════════════════════════╝${NC}\n"
+    
+    echo -e "${WHITE}📁 Informasi:${NC}"
+    echo -e "  Direktori Bot: ${CYAN}$BOT_DIR${NC}"
+    echo -e "  File Bot: ${CYAN}$BOT_FILE${NC}\n"
+    
+    echo -e "${WHITE}📋 Menu:${NC}"
+    echo -e "  ${GREEN}1)${NC} 🔍  Lihat Token yang Ada"
+    echo -e "  ${GREEN}2)${NC} 🖥️  Lihat Daftar Droplet"
+    echo -e "  ${GREEN}3)${NC} 🔑  Buat/Input Token Baru"
+    echo -e "  ${GREEN}4)${NC} 📝  Update Token di File Bot"
+    echo -e "  ${GREEN}5)${NC} 🔄  Restart Bot"
+    echo -e "  ${GREEN}6)${NC} 🧪  Test Token"
+    echo -e "  ${GREEN}7)${NC} 🔧  Simpan ke Environment"
+    echo -e "  ${GREEN}8)${NC} 📦  Install Dependencies"
+    echo -e "  ${GREEN}9)${NC} 📊  Monitoring Token (Live)"
+    echo -e "  ${GREEN}10)${NC} ❌  Keluar\n"
+    
+    echo -n "Pilih menu [1-10]: "
+    read -r MENU
+    
+    case $MENU in
+        1) check_existing_token ;;
+        2) view_droplets ;;
+        3) create_new_token ;;
+        4) update_token_in_bot ;;
+        5) restart_bot ;;
+        6) test_token ;;
+        7) save_to_environment ;;
+        8) install_dependencies ;;
+        9) monitor_token ;;
+        10) 
+            echo -e "\n${GREEN}Terima kasih!${NC}"
+            exit 0
+            ;;
+        *)
+            error_message "Pilihan tidak valid!"
+            sleep 2
+            ;;
+    esac
+    
+    echo -e "\n${YELLOW}Tekan Enter untuk kembali ke menu...${NC}"
+    read -r
+    show_menu
+}
+
+# ==============================================
+# MAIN PROGRAM
+# ==============================================
+
+# Cek root
+check_root
+
+# Cek direktori bot
+check_bot_dir
+
+# Install dependencies dasar
+install_dependencies
+
+# Tampilkan menu
+show_menu
