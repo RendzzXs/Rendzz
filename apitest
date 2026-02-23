@@ -1,388 +1,301 @@
 #!/bin/bash
 
-# ==============================================
-# DETECT DIGITALOCEAN TOKEN (dop_v1_ format)
-# ==============================================
+# ==================== KONFIGURASI ====================
+# 🔑 API KEY ATLANTIC (GANTI DENGAN ASLI)
+API_ATLANTIC="sZtKMW3BIL96FFMAnIIO22lRiO1cadQsxXHo7ljB2pZTVnu56EraFGqnGsLwqaZUFrGA9GT99kzNNg1BSU8mZpsavAHYZR6zC0pr"
 
-# Warna output
+# 🔐 API KEY RUMAHOTP
+API_RUMAHOTP="sZtKMW3BIL96FFMAnIIO22lRiO1cadQsxXHo7ljB2pZTVnu56EraFGqnGsLwqaZUFrGA9GT99kzNNg1BSU8mZpsavAHYZR6zC0pr"
+
+# 💳 Data tujuan
+BANK_CODE="GOPAY"
+DEST_NUMBER="083152799571"
+DEST_NAME="HANARIANTI"
+
+# 💰 Saldo SEBENARNYA
+SALDO=16340
+FEE=2000
+
+# NOMINAL YANG MAU DI TARIK (AMAN: 14.000)
+NOMINAL_TARIK=14000
+NET=$((NOMINAL_TARIK - FEE))
+SISA_SALDO=$((SALDO - NOMINAL_TARIK))
+
+# ==================== WARNA ====================
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
-WHITE='\033[1;37m'
-NC='\033[0m'
+NC='\033[0m' # No Color
 
-# Token pattern untuk dop_v1_
-TOKEN_PATTERN="dop_v1_[a-f0-9]{64}"
+# ==================== FUNGSI ====================
 
-# File untuk menyimpan hasil
-RESULT_FILE="found_tokens_$(date +%Y%m%d_%H%M%S).txt"
+# Generate REF ID
+generate_ref_id() {
+    echo "wd_$(date +%s)_$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 9 | head -n 1 2>/dev/null || echo "random$RANDOM")"
+}
 
-# ==============================================
-# FUNGSI DETECTION
-# ==============================================
+# Format Rupiah
+format_rupiah() {
+    echo "Rp $(echo $1 | sed ':a;s/\B[0-9]\{3\}\>/.&/;ta')"
+}
 
-# Fungsi untuk mengecek format token
-validate_token() {
-    local token=$1
-    if [[ $token =~ ^dop_v1_[a-f0-9]{64}$ ]]; then
-        return 0
+# Tampilkan header
+show_header() {
+    clear
+    echo -e "${CYAN}╔════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║     💰 WITHDRAW GATEWAY - BASH VERSION       ║${NC}"
+    echo -e "${CYAN}║        TARIK Rp 14.000 | Fee Rp 2.000        ║${NC}"
+    echo -e "${CYAN}╚════════════════════════════════════════════════╝${NC}"
+    echo ""
+}
+
+# Tampilkan info saldo
+show_saldo() {
+    echo -e "${YELLOW}📊 INFORMASI SALDO:${NC}"
+    echo -e "   Saldo tersedia  : ${GREEN}$(format_rupiah $SALDO)${NC}"
+    echo -e "   Fee admin        : ${RED}$(format_rupiah $FEE)${NC}"
+    echo ""
+    echo -e "${YELLOW}💰 RENCANA PENARIKAN:${NC}"
+    echo -e "   Tarik nominal    : ${BLUE}$(format_rupiah $NOMINAL_TARIK)${NC}"
+    echo -e "   Net diterima     : ${GREEN}$(format_rupiah $NET)${NC}"
+    echo -e "   Sisa saldo       : ${YELLOW}$(format_rupiah $SISA_SALDO)${NC}"
+    echo ""
+    echo -e "${YELLOW}💳 TUJUAN WITHDRAW:${NC}"
+    echo -e "   Bank            : ${BLUE}$BANK_CODE${NC}"
+    echo -e "   No. Tujuan      : ${BLUE}$DEST_NUMBER${NC}"
+    echo -e "   Nama            : ${BLUE}$DEST_NAME${NC}"
+    echo ""
+}
+
+# Withdraw Atlantic (NOMINAL 14.000)
+withdraw_atlantic() {
+    local nominal=$NOMINAL_TARIK
+    local note="Tarik Rp 14.000"
+    local ref_id=$(generate_ref_id)
+    
+    echo -e "${PURPLE}🌊 ATLANTIC WITHDRAW${NC}"
+    echo -e "${YELLOW}─────────────────────────────${NC}"
+    echo -e "REF ID    : $ref_id"
+    echo -e "Nominal   : $(format_rupiah $nominal)"
+    echo -e "Fee       : $(format_rupiah $FEE)"
+    echo -e "Net       : $(format_rupiah $NET)"
+    echo -e "Note      : $note"
+    echo -e "${YELLOW}─────────────────────────────${NC}"
+    echo -e "${CYAN}⏳ Mengirim request ke Atlantic...${NC}"
+    
+    # Data untuk dikirim
+    local data="api_key=${API_ATLANTIC}&ref_id=${ref_id}&kode_bank=${BANK_CODE}&nomor_akun=${DEST_NUMBER}&nama_pemilik=${DEST_NAME}&nominal=${nominal}&email=bot@telegram.com&phone=${DEST_NUMBER}&note=${note}"
+    
+    echo -e "${BLUE}📤 Request data:${NC}"
+    echo "$data" | sed 's/api_key=[^&]*/api_key=HIDDEN/'
+    echo ""
+    
+    # Kirim pake curl
+    response=$(curl -s -X POST "https://atlantich2h.com/transfer/create" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "$data" \
+        --max-time 20 \
+        -w "\n%{http_code}")
+    
+    # Pisahkan response dan http code
+    http_code=$(echo "$response" | tail -n1)
+    response_body=$(echo "$response" | sed '$d')
+    
+    # Cek response
+    if [ "$http_code" = "200" ]; then
+        echo -e "${GREEN}✅ SUKSES! (HTTP $http_code)${NC}"
+        echo ""
+        echo -e "${YELLOW}📦 Response dari server:${NC}"
+        
+        # Coba format dengan jq kalau ada
+        if command -v jq &> /dev/null; then
+            echo "$response_body" | jq '.' 2>/dev/null || echo "$response_body"
+        else
+            echo "$response_body"
+        fi
+        
+        # Tampilkan ringkasan
+        echo ""
+        echo -e "${GREEN}🎉 WITHDRAW BERHASIL!${NC}"
+        echo -e "   Nominal : $(format_rupiah $nominal)"
+        echo -e "   Fee     : $(format_rupiah $FEE)"
+        echo -e "   Net     : $(format_rupiah $NET)"
+        echo -e "   Sisa    : $(format_rupiah $SISA_SALDO)"
+        
     else
-        return 1
+        echo -e "${RED}❌ GAGAL! (HTTP $http_code)${NC}"
+        echo ""
+        echo -e "${YELLOW}📦 Response error:${NC}"
+        echo "$response_body"
+        
+        # Kasih saran
+        echo ""
+        echo -e "${YELLOW}💡 SARAN:${NC}"
+        echo "1. Cek API Key Atlantic (mungkin beda dengan RumahOTP)"
+        echo "2. Coba nominal lebih kecil (misal 10.000)"
+        echo "3. Cek koneksi internet"
     fi
 }
 
-# Fungsi untuk menyorot token
-highlight_token() {
-    echo "$1" | sed -E "s/(dop_v1_[a-f0-9]{64})/${GREEN}\1${NC}/g"
-}
-
-# Deteksi dari file bot (index.js, config.js, dll)
-detect_from_bot_files() {
-    echo -e "\n${BLUE}🔍 Mencari di file bot JavaScript...${NC}"
+# Withdraw RumahOTP
+withdraw_rumahotp() {
+    local nominal=$NOMINAL_TARIK
+    local ref_id=$(generate_ref_id)
     
-    # Cari file js yang mungkin berisi token
-    find / -name "*.js" -type f 2>/dev/null | while read -r file; do
-        if grep -q "dop_v1_" "$file" 2>/dev/null; then
-            echo -e "\n${YELLOW}📁 File: $file${NC}"
-            grep -n "dop_v1_" "$file" 2>/dev/null | while read -r line; do
-                # Ekstrak token
-                token=$(echo "$line" | grep -oE "dop_v1_[a-f0-9]{64}")
-                if [ -n "$token" ] && validate_token "$token"; then
-                    echo -e "  ${GREEN}✓${NC} Baris $(echo "$line" | cut -d: -f1): $(highlight_token "$line")"
-                    echo "BOT_FILE:$file:$token" >> "$RESULT_FILE"
-                fi
-            done
-        fi
-    done
-}
-
-# Deteksi dari environment variables
-detect_from_env() {
-    echo -e "\n${BLUE}🔍 Mencari di Environment Variables...${NC}"
+    echo -e "${PURPLE}🏡 RUMAHOTP WITHDRAW${NC}"
+    echo -e "${YELLOW}─────────────────────────────${NC}"
+    echo -e "REF ID    : $ref_id"
+    echo -e "Nominal   : $(format_rupiah $nominal)"
+    echo -e "Fee       : $(format_rupiah $FEE)"
+    echo -e "Net       : $(format_rupiah $NET)"
+    echo -e "${YELLOW}─────────────────────────────${NC}"
+    echo -e "${CYAN}⏳ Mengirim request ke RumahOTP...${NC}"
     
-    env | while read -r line; do
-        if [[ "$line" == *"dop_v1_"* ]]; then
-            token=$(echo "$line" | grep -oE "dop_v1_[a-f0-9]{64}")
-            if [ -n "$token" ] && validate_token "$token"; then
-                echo -e "${GREEN}✓${NC} $(highlight_token "$line")"
-                echo "ENV:$line" >> "$RESULT_FILE"
-            fi
-        fi
-    done
-}
-
-# Deteksi dari file .env
-detect_from_dotenv() {
-    echo -e "\n${BLUE}🔍 Mencari di file .env...${NC}"
+    # Data JSON
+    local json_data="{\"api_key\":\"${API_RUMAHOTP}\",\"action\":\"transfer\",\"code\":\"${BANK_CODE}\",\"target\":\"${DEST_NUMBER}\",\"amount\":${nominal},\"reff_id\":\"${ref_id}\"}"
     
-    find / -name ".env" -type f 2>/dev/null | while read -r file; do
-        if grep -q "dop_v1_" "$file" 2>/dev/null; then
-            echo -e "\n${YELLOW}📁 File: $file${NC}"
-            grep -n "dop_v1_" "$file" 2>/dev/null | while read -r line; do
-                token=$(echo "$line" | grep -oE "dop_v1_[a-f0-9]{64}")
-                if [ -n "$token" ] && validate_token "$token"; then
-                    echo -e "  ${GREEN}✓${NC} Baris $(echo "$line" | cut -d: -f1): $(highlight_token "$line")"
-                    echo "DOTENV:$file:$token" >> "$RESULT_FILE"
-                fi
-            done
-        fi
-    done
-}
-
-# Deteksi dari file konfigurasi JSON
-detect_from_json() {
-    echo -e "\n${BLUE}🔍 Mencari di file JSON...${NC}"
+    echo -e "${BLUE}📤 Request data:${NC}"
+    echo "$json_data" | sed 's/"api_key":"[^"]*"/"api_key":"HIDDEN"/'
+    echo ""
     
-    find / -name "*.json" -type f 2>/dev/null | while read -r file; do
-        if grep -q "dop_v1_" "$file" 2>/dev/null; then
-            echo -e "\n${YELLOW}📁 File: $file${NC}"
-            grep -n "dop_v1_" "$file" 2>/dev/null | head -3 | while read -r line; do
-                token=$(echo "$line" | grep -oE "dop_v1_[a-f0-9]{64}")
-                if [ -n "$token" ] && validate_token "$token"; then
-                    echo -e "  ${GREEN}✓${NC} Baris $(echo "$line" | cut -d: -f1): $(highlight_token "$(echo "$line" | cut -d: -f2-)")"
-                    echo "JSON:$file:$token" >> "$RESULT_FILE"
-                fi
-            done
-        fi
-    done
-}
-
-# Deteksi dari process yang running
-detect_from_processes() {
-    echo -e "\n${BLUE}🔍 Mencari di proses yang berjalan...${NC}"
+    # Kirim pake curl
+    response=$(curl -s -X POST "https://rumahotp.com/api/transfer" \
+        -H "Content-Type: application/json" \
+        -d "$json_data" \
+        --max-time 20 \
+        -w "\n%{http_code}")
     
-    # Cek command line proses
-    ps aux | while read -r line; do
-        if [[ "$line" == *"dop_v1_"* ]] && [[ "$line" != *"grep"* ]]; then
-            token=$(echo "$line" | grep -oE "dop_v1_[a-f0-9]{64}")
-            if [ -n "$token" ] && validate_token "$token"; then
-                pid=$(echo "$line" | awk '{print $2}')
-                cmd=$(echo "$line" | awk '{for(i=11;i<=NF;i++) printf "%s ", $i; print ""}')
-                echo -e "${GREEN}✓${NC} PID $pid: $(highlight_token "$cmd")"
-                echo "PROCESS:$pid:$token" >> "$RESULT_FILE"
-            fi
-        fi
-    done
+    # Pisahkan response dan http code
+    http_code=$(echo "$response" | tail -n1)
+    response_body=$(echo "$response" | sed '$d')
     
-    # Cek environment process
-    echo -e "\n${YELLOW}Mencari di environment process...${NC}"
-    for pid in $(pgrep -f "node|npm|pm2"); do
-        if [ -r "/proc/$pid/environ" ]; then
-            env_data=$(cat "/proc/$pid/environ" 2>/dev/null | tr '\0' '\n' | grep "dop_v1_")
-            if [ -n "$env_data" ]; then
-                token=$(echo "$env_data" | grep -oE "dop_v1_[a-f0-9]{64}")
-                if [ -n "$token" ] && validate_token "$token"; then
-                    echo -e "${GREEN}✓${NC} PID $pid: $(highlight_token "$env_data")"
-                    echo "PROCESS_ENV:$pid:$token" >> "$RESULT_FILE"
-                fi
-            fi
-        fi
-    done
-}
-
-# Deteksi dari bash history
-detect_from_history() {
-    echo -e "\n${BLUE}🔍 Mencari di bash history...${NC}"
-    
-    # Cek history untuk setiap user
-    for home in /home/* /root; do
-        if [ -f "$home/.bash_history" ]; then
-            if grep -q "dop_v1_" "$home/.bash_history" 2>/dev/null; then
-                user=$(basename "$home")
-                echo -e "\n${YELLOW}📁 History user: $user${NC}"
-                grep "dop_v1_" "$home/.bash_history" 2>/dev/null | tail -5 | while read -r line; do
-                    token=$(echo "$line" | grep -oE "dop_v1_[a-f0-9]{64}")
-                    if [ -n "$token" ] && validate_token "$token"; then
-                        echo -e "  ${GREEN}✓${NC} $(highlight_token "$line")"
-                        echo "HISTORY:$user:$token" >> "$RESULT_FILE"
-                    fi
-                done
-            fi
-        fi
-    done
-}
-
-# Deteksi dari log files
-detect_from_logs() {
-    echo -e "\n${BLUE}🔍 Mencari di file log...${NC}"
-    
-    # Cari di berbagai direktori log
-    for logdir in /var/log /root/logs /opt/logs; do
-        if [ -d "$logdir" ]; then
-            find "$logdir" -type f -name "*.log" -o -name "*.out" -o -name "*.txt" 2>/dev/null | while read -r logfile; do
-                if grep -q "dop_v1_" "$logfile" 2>/dev/null; then
-                    echo -e "\n${YELLOW}📁 Log: $logfile${NC}"
-                    grep -n "dop_v1_" "$logfile" 2>/dev/null | tail -3 | while read -r line; do
-                        token=$(echo "$line" | grep -oE "dop_v1_[a-f0-9]{64}")
-                        if [ -n "$token" ] && validate_token "$token"; then
-                            echo -e "  ${GREEN}✓${NC} Baris $(echo "$line" | cut -d: -f1): $(highlight_token "$(echo "$line" | cut -d: -f2-)")"
-                            echo "LOG:$logfile:$token" >> "$RESULT_FILE"
-                        fi
-                    done
-                fi
-            done
-        fi
-    done
-}
-
-# Deteksi dari file backup
-detect_from_backups() {
-    echo -e "\n${BLUE}🔍 Mencari di file backup...${NC}"
-    
-    find / -name "*.backup" -o -name "*.bak" -o -name "*.old" 2>/dev/null | while read -r backup; do
-        if grep -q "dop_v1_" "$backup" 2>/dev/null; then
-            echo -e "\n${YELLOW}📁 Backup: $backup${NC}"
-            token=$(grep -oE "dop_v1_[a-f0-9]{64}" "$backup" | head -1)
-            if [ -n "$token" ] && validate_token "$token"; then
-                echo -e "  ${GREEN}✓${NC} Token ditemukan: $(highlight_token "$token")"
-                echo "BACKUP:$backup:$token" >> "$RESULT_FILE"
-            fi
-        fi
-    done
-}
-
-# Fungsi untuk test token
-test_token() {
-    local token=$1
-    echo -e "\n${BLUE}🧪 Testing token: ${token:0:20}...${NC}"
-    
-    # Test ke DigitalOcean API
-    response=$(curl -s -o /dev/null -w "%{http_code}" -X GET "https://api.digitalocean.com/v2/account" \
-        -H "Authorization: Bearer $token" \
-        -H "Content-Type: application/json" 2>/dev/null)
-    
-    if [ "$response" -eq 200 ]; then
-        echo -e "  ${GREEN}✓ TOKEN VALID!${NC}"
-        
-        # Ambil info account
-        account=$(curl -s -X GET "https://api.digitalocean.com/v2/account" \
-            -H "Authorization: Bearer $token" 2>/dev/null)
-        
-        # Parse dengan jq jika ada
-        if command -v jq &> /dev/null; then
-            email=$(echo "$account" | jq -r '.account.email' 2>/dev/null)
-            limit=$(echo "$account" | jq -r '.account.droplet_limit' 2>/dev/null)
-            echo -e "  Email: $email"
-            echo -e "  Droplet Limit: $limit"
-        fi
-        
-        # Hitung droplets
-        droplets=$(curl -s -X GET "https://api.digitalocean.com/v2/droplets" \
-            -H "Authorization: Bearer $token" 2>/dev/null)
+    if [ "$http_code" = "200" ]; then
+        echo -e "${GREEN}✅ SUKSES! (HTTP $http_code)${NC}"
+        echo ""
+        echo -e "${YELLOW}📦 Response dari server:${NC}"
         
         if command -v jq &> /dev/null; then
-            count=$(echo "$droplets" | jq '.droplets | length' 2>/dev/null)
-            echo -e "  Droplets Aktif: $count"
+            echo "$response_body" | jq '.' 2>/dev/null || echo "$response_body"
+        else
+            echo "$response_body"
         fi
         
-        return 0
-    elif [ "$response" -eq 401 ]; then
-        echo -e "  ${RED}✗ TOKEN TIDAK VALID (Unauthorized)${NC}"
-        return 1
+        echo ""
+        echo -e "${GREEN}🎉 WITHDRAW BERHASIL!${NC}"
+        echo -e "   Nominal : $(format_rupiah $nominal)"
+        echo -e "   Fee     : $(format_rupiah $FEE)"
+        echo -e "   Net     : $(format_rupiah $NET)"
+        
     else
-        echo -e "  ${YELLOW}⚠ Error: HTTP $response${NC}"
-        return 2
+        echo -e "${RED}❌ GAGAL! (HTTP $http_code)${NC}"
+        echo ""
+        echo -e "${YELLOW}📦 Response error:${NC}"
+        echo "$response_body"
+        echo ""
+        echo -e "${YELLOW}💡 CATATAN:${NC}"
+        echo "Endpoint RumahOTP mungkin berbeda. Cek dokumentasi."
     fi
 }
 
-# ==============================================
-# MAIN EXECUTION
-# ==============================================
-
-clear
-echo -e "${BLUE}╔══════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║     DIGITALOCEAN TOKEN DETECTOR (dop_v1_ format)    ║${NC}"
-echo -e "${BLUE}║         Mencari token di seluruh sistem              ║${NC}"
-echo -e "${BLUE}╚══════════════════════════════════════════════════════╝${NC}\n"
-
-echo -e "${YELLOW}Contoh token target:${NC} dop_v1_8b61bc6c6208528381ca8928b9a0c90a1644a4269ed9e8ee323774149dd4bfcf"
-echo -e "${WHITE}Pencarian dimulai...${NC}\n"
-
-# Array untuk menyimpan token unik
-declare -A unique_tokens
-
-# Jalankan semua fungsi deteksi
-detect_from_bot_files
-detect_from_env
-detect_from_dotenv
-detect_from_json
-detect_from_processes
-detect_from_history
-detect_from_logs
-detect_from_backups
-
-# ==============================================
-# TAMPILKAN HASIL UNIK
-# ==============================================
-
-echo -e "\n${BLUE}══════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}📋 RINGKASAN TOKEN DITEMUKAN${NC}"
-echo -e "${BLUE}══════════════════════════════════════════════════════${NC}\n"
-
-# Baca file hasil dan tampilkan token unik
-if [ -f "$RESULT_FILE" ]; then
-    echo -e "${WHITE}Token yang ditemukan:${NC}\n"
+# Coba nominal lain
+withdraw_custom() {
+    echo ""
+    read -p "Masukkan nominal tarik (contoh: 10000): " custom_nom
     
-    # Ekstrak semua token
-    while IFS= read -r line; do
-        token=$(echo "$line" | grep -oE "dop_v1_[a-f0-9]{64}")
-        if [ -n "$token" ] && [ -z "${unique_tokens[$token]}" ]; then
-            unique_tokens[$token]=1
-            source=$(echo "$line" | cut -d: -f1)
-            location=$(echo "$line" | cut -d: -f2)
-            
-            echo -e "${GREEN}🔑 Token:${NC} $(highlight_token "$token")"
-            echo -e "  ${YELLOW}📍 Sumber:${NC} $source"
-            echo -e "  ${YELLOW}📁 Lokasi:${NC} $location"
-            echo -e "  ${YELLOW}---${NC}"
-        fi
-    done < "$RESULT_FILE"
+    # Validasi angka
+    if ! [[ "$custom_nom" =~ ^[0-9]+$ ]] || [ "$custom_nom" -le 0 ]; then
+        echo -e "${RED}❌ Nominal tidak valid!${NC}"
+        return
+    fi
     
-    echo -e "\n${GREEN}Total token unik ditemukan: ${#unique_tokens[@]}${NC}"
+    # Cek saldo
+    if [ "$custom_nom" -gt "$SALDO" ]; then
+        echo -e "${RED}❌ Saldo tidak cukup! Maks: $(format_rupiah $SALDO)${NC}"
+        return
+    fi
     
-    # ==============================================
-    # TEST TOKEN
-    # ==============================================
-    echo -e "\n${BLUE}══════════════════════════════════════════════════════${NC}"
-    echo -e "${PURPLE}🧪 TESTING TOKEN${NC}"
-    echo -e "${BLUE}══════════════════════════════════════════════════════${NC}\n"
+    # Simpan nominal lama, ganti sementara
+    local old_nominal=$NOMINAL_TARIK
+    NOMINAL_TARIK=$custom_nom
+    NET=$((NOMINAL_TARIK - FEE))
+    SISA_SALDO=$((SALDO - NOMINAL_TARIK))
     
-    valid_tokens=0
-    for token in "${!unique_tokens[@]}"; do
-        if test_token "$token"; then
-            ((valid_tokens++))
-        fi
-        echo "---"
+    echo ""
+    echo "Pilih Gateway:"
+    echo "1. 🌊 Atlantic"
+    echo "2. 🏡 RumahOTP"
+    read -p "Pilih (1/2): " gw
+    
+    if [ "$gw" == "1" ]; then
+        withdraw_atlantic
+    elif [ "$gw" == "2" ]; then
+        withdraw_rumahotp
+    else
+        echo -e "${RED}❌ Pilihan tidak valid${NC}"
+    fi
+    
+    # Kembalikan nominal
+    NOMINAL_TARIK=$old_nominal
+    NET=$((NOMINAL_TARIK - FEE))
+    SISA_SALDO=$((SALDO - NOMINAL_TARIK))
+}
+
+# Cek dependencies
+check_deps() {
+    if ! command -v curl &> /dev/null; then
+        echo -e "${RED}❌ curl tidak ditemukan. Install dulu:${NC}"
+        echo "   pkg install curl      (Termux)"
+        echo "   apt-get install curl  (Linux)"
+        exit 1
+    fi
+}
+
+# ==================== MAIN MENU ====================
+main() {
+    check_deps
+    
+    while true; do
+        show_header
+        show_saldo
+        
+        echo -e "${CYAN}📋 MENU:${NC}"
+        echo "1. 🌊 Withdraw ATLANTIC (Rp 14.000)"
+        echo "2. 🏡 Withdraw RUMAHOTP (Rp 14.000)"
+        echo "3. 💰 Withdraw nominal custom"
+        echo "4. 🔍 Cek saldo Atlantic"
+        echo "5. ❌ Keluar"
+        echo ""
+        read -p "👉 Pilih menu (1-5): " menu
+        
+        case $menu in
+            1)
+                withdraw_atlantic
+                ;;
+            2)
+                withdraw_rumahotp
+                ;;
+            3)
+                withdraw_custom
+                ;;
+            4)
+                cek_saldo_atlantic
+                ;;
+            5)
+                echo -e "${GREEN}👋 Bye!${NC}"
+                exit 0
+                ;;
+            *)
+                echo -e "${RED}❌ Pilihan tidak valid!${NC}"
+                ;;
+        esac
+        
+        echo ""
+        read -p "Tekan Enter untuk kembali ke menu..."
     done
-    
-    echo -e "\n${GREEN}Token valid: $valid_tokens dari ${#unique_tokens[@]}${NC}"
-    
-    # ==============================================
-    # SIMPAN HASIL
-    # ==============================================
-    echo -e "\n${GREEN}✅ Hasil lengkap disimpan di: $RESULT_FILE${NC}"
-    
-    # Tampilkan isi file hasil
-    echo -e "\n${YELLOW}Detail file hasil:${NC}"
-    cat "$RESULT_FILE"
-    
-else
-    echo -e "${RED}❌ TIDAK ADA TOKEN DITEMUKAN!${NC}"
-    echo -e "\n${YELLOW}Kemungkinan penyebab:${NC}"
-    echo "1. Token belum pernah digunakan di sistem ini"
-    echo "2. Token disimpan dengan format berbeda"
-    echo "3. Token disimpan di file terenkripsi"
-    echo "4. Anda perlu menjalankan script sebagai root"
-fi
+}
 
-# ==============================================
-# MENU TAMBAHAN
-# ==============================================
-
-echo -e "\n${BLUE}══════════════════════════════════════════════════════${NC}"
-echo -e "${WHITE}Pilih tindakan:${NC}"
-echo "1) Export token ke environment"
-echo "2) Update token di file bot"
-echo "3) Restart bot dengan token"
-echo "4) Keluar"
-echo -n "Pilihan [1-4]: "
-read -r action
-
-case $action in
-    1)
-        if [ ${#unique_tokens[@]} -gt 0 ]; then
-            token=$(echo "${!unique_tokens[@]}" | head -1)
-            echo "export DIGITALOCEAN_TOKEN=\"$token\"" >> ~/.bashrc
-            echo "export DO_TOKEN=\"$token\"" >> ~/.bashrc
-            source ~/.bashrc
-            echo -e "${GREEN}✅ Token disimpan di environment${NC}"
-        fi
-        ;;
-    2)
-        if [ ${#unique_tokens[@]} -gt 0 ]; then
-            echo -n "Masukkan path file bot (contoh: /root/bot/index.js): "
-            read -r botfile
-            if [ -f "$botfile" ]; then
-                token=$(echo "${!unique_tokens[@]}" | head -1)
-                cp "$botfile" "$botfile.backup"
-                sed -i "s/DIGITALOCEAN_TOKEN = ['\"][^'\"]*['\"]/DIGITALOCEAN_TOKEN = '$token'/" "$botfile"
-                echo -e "${GREEN}✅ Token diupdate di $botfile${NC}"
-            fi
-        fi
-        ;;
-    3)
-        echo -e "${YELLOW}Restart bot...${NC}"
-        pkill -f "node.*index.js"
-        cd /root/bot 2>/dev/null && nohup node index.js > bot.log 2>&1 &
-        echo -e "${GREEN}✅ Bot direstart${NC}"
-        ;;
-    4)
-        echo -e "${GREEN}Terima kasih!${NC}"
-        exit 0
-        ;;
-esac
-
-echo -e "\n${GREEN}Selesai!${NC}"
+# Run main function
+main
