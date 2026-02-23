@@ -1,9 +1,6 @@
 #!/bin/bash
 
-# ==================== MULTI WD ====================
-# Simple! Tinggal pilih mau pake API key yang mana
-
-# ==================== WARNA ====================
+# ==================== SPAM CREATE QRIS ====================
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -12,185 +9,234 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# ==================== DATA TUJUAN (FIX) ====================
-BANK_CODE="GOPAY"
+# ==================== KONFIGURASI ====================
+# Data tujuan (ganti sesuai kebutuhan)
 DEST_NUMBER="083152799571"
 DEST_NAME="HANARIANTI"
-FEE=2000
 
-# ==================== DAFTAR API KEY ====================
+# 3 API KEY READY
 API_KEYS=(
-    # API 1 - Atlantic/RumahOTP ?
     "sZtKMW3BIL96FFMAnIIO22lRiO1cadQsxXHo7ljB2pZTVnu56EraFGqnGsLwqaZUFrGA9GT99kzNNg1BSU8mZpsavAHYZR6zC0pr"
-    
-    # API 2 - Yang baru Anda kasih
     "xdpobigf1fXccFSahQ0A2EESm5A4XY2nK62F3pLxMIcHVGtjRLBOXypTkfvuF8DoZxhOaZmfVAlIpbeKoQW8DqHqpgStSiEuWSHk"
-    
-    # API 3 - Yang kedua
     "Ob2ON2EHS70Idc6f27MNI2aUynmFhXu4klJcqKgCQUrDkm3QXX4HhbZ0JndwoeK4ajeqkgyCCz4RN7QhfN2uGPuutkXCXGNYCFYQ"
 )
 
 # ==================== FUNGSI ====================
 
-# Generate REF ID
 generate_ref_id() {
-    echo "wd_$(date +%s)_$(cat /dev/urandom 2>/dev/null | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1 || echo "RANDOM$RANDOM")"
+    echo "QR_$(date +%s%N)_$(cat /dev/urandom 2>/dev/null | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1 || echo "SPAM$RANDOM")"
 }
 
-# Format Rupiah
-format_rupiah() {
-    echo "Rp $(echo $1 | sed ':a;s/\B[0-9]\{3\}\>/.&/;ta')"
-}
-
-# Tampilkan header
 show_header() {
     clear
     echo -e "${CYAN}╔════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║     💰 MULTI WITHDRAW GATEWAY         ║${NC}"
-    echo -e "${CYAN}║       Pilih API Key - Bebas!          ║${NC}"
+    echo -e "${CYAN}║     💰 SPAM CREATE QRIS v1.0          ║${NC}"
+    echo -e "${CYAN}║        3 API READY - LANGSUNG         ║${NC}"
     echo -e "${CYAN}╚════════════════════════════════════════╝${NC}"
     echo ""
 }
 
-# Withdraw function
-withdraw() {
+# Function create QRIS
+create_qris() {
     local api_key=$1
     local api_num=$2
     local nominal=$3
-    
-    echo -e "${YELLOW}─────────────────────────────${NC}"
-    echo -e "${PURPLE}🔑 Menggunakan API Key #$api_num${NC}"
-    echo -e "   ${api_key:0:20}...${api_key: -10}"
-    echo -e "${YELLOW}─────────────────────────────${NC}"
-    
     local ref_id=$(generate_ref_id)
-    local note="WD via API#$api_num"
-    local net=$((nominal - FEE))
     
-    echo -e "💰 Nominal : $(format_rupiah $nominal)"
-    echo -e "💸 Fee     : $(format_rupiah $FEE)"
-    echo -e "💵 Net     : $(format_rupiah $net)"
-    echo -e "🔖 Ref ID  : $ref_id"
-    echo -e "🏦 Tujuan  : $BANK_CODE - $DEST_NUMBER ($DEST_NAME)"
-    echo ""
+    echo -e "${YELLOW}─────────────────────────────${NC}"
+    echo -e "${PURPLE}🔑 API #$api_num | Ref: $ref_id${NC}"
+    echo -e "${YELLOW}─────────────────────────────${NC}"
     
-    read -p "Lanjutkan? (y/n): " confirm
-    if [[ $confirm != "y" && $confirm != "Y" ]]; then
-        echo -e "${RED}❌ Dibatalkan${NC}"
-        return
-    fi
+    # Data untuk create QRIS (sesuaikan dengan endpoint)
+    local data="api_key=${api_key}&ref_id=${ref_id}&nominal=${nominal}&phone=${DEST_NUMBER}&name=${DEST_NAME}&type=qris"
     
-    echo -e "${CYAN}⏳ Mengirim request...${NC}"
+    # Coba beberapa endpoint umum
+    endpoints=(
+        "https://atlantich2h.com/qris/create"
+        "https://rumahotp.com/api/qris"
+        "https://api.gateway.com/qris/create"
+    )
     
-    # Data untuk dikirim (format Atlantic)
-    local data="api_key=${api_key}&ref_id=${ref_id}&kode_bank=${BANK_CODE}&nomor_akun=${DEST_NUMBER}&nama_pemilik=${DEST_NAME}&nominal=${nominal}&email=bot@telegram.com&phone=${DEST_NUMBER}&note=${note}"
-    
-    # Coba ke Atlantic dulu
-    response=$(curl -s -X POST "https://atlantich2h.com/transfer/create" \
-        -H "Content-Type: application/x-www-form-urlencoded" \
-        -d "$data" \
-        --max-time 15 \
-        -w "\n%{http_code}")
-    
-    http_code=$(echo "$response" | tail -n1)
-    response_body=$(echo "$response" | sed '$d')
-    
-    echo ""
-    if [ "$http_code" = "200" ]; then
-        echo -e "${GREEN}✅ SUKSES! (HTTP $http_code)${NC}"
-        echo "$response_body" | jq '.' 2>/dev/null || echo "$response_body"
-        echo ""
-        echo -e "${GREEN}🎉 WD BERHASIL! Net: $(format_rupiah $net)${NC}"
-    else
-        echo -e "${RED}❌ GAGAL! (HTTP $http_code)${NC}"
-        echo "$response_body"
+    for endpoint in "${endpoints[@]}"; do
+        echo -e "${CYAN}📤 Coba: $endpoint${NC}"
         
-        # Coba pake endpoint RumahOTP?
-        echo ""
-        echo -e "${YELLOW}Coba pake endpoint RumahOTP? (y/n):${NC}"
-        read -p "> " coba_lagi
-        if [[ $coba_lagi == "y" || $coba_lagi == "Y" ]]; then
-            echo -e "${CYAN}⏳ Mencoba ke RumahOTP...${NC}"
+        response=$(curl -s -X POST "$endpoint" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "$data" \
+            --max-time 10 \
+            -w "\n%{http_code}")
+        
+        http_code=$(echo "$response" | tail -n1)
+        response_body=$(echo "$response" | sed '$d')
+        
+        if [ "$http_code" = "200" ]; then
+            echo -e "${GREEN}✅ SUKSES! (HTTP $http_code)${NC}"
+            echo "$response_body" | jq '.' 2>/dev/null || echo "$response_body"
             
-            # Format JSON untuk RumahOTP
-            json_data="{\"api_key\":\"${api_key}\",\"action\":\"transfer\",\"code\":\"${BANK_CODE}\",\"target\":\"${DEST_NUMBER}\",\"amount\":${nominal},\"reff_id\":\"${ref_id}\"}"
-            
-            response2=$(curl -s -X POST "https://rumahotp.com/api/transfer" \
-                -H "Content-Type: application/json" \
-                -d "$json_data" \
-                --max-time 15 \
-                -w "\n%{http_code}")
-            
-            http_code2=$(echo "$response2" | tail -n1)
-            response_body2=$(echo "$response2" | sed '$d')
-            
-            if [ "$http_code2" = "200" ]; then
-                echo -e "${GREEN}✅ SUKSES via RumahOTP!${NC}"
-                echo "$response_body2" | jq '.' 2>/dev/null || echo "$response_body2"
-            else
-                echo -e "${RED}❌ GAGAL juga via RumahOTP${NC}"
-            fi
+            # Log sukses
+            echo "[$(date '+%H:%M:%S')] API#$api_num | $nominal | SUCCESS" >> qris_success.log
+            return 0
+        else
+            echo -e "${RED}❌ Gagal (HTTP $http_code)${NC}"
         fi
-    fi
+    done
+    
+    echo -e "${RED}❌ Semua endpoint gagal untuk API #$api_num${NC}"
+    echo "[$(date '+%H:%M:%S')] API#$api_num | $nominal | FAILED" >> qris_failed.log
+    return 1
 }
 
-# ==================== MAIN ====================
+# ==================== MODE SPAM ====================
+
+# Mode 1: Spam pake 1 API tertentu
+spam_single() {
+    local api_num=$1
+    local nominal=$2
+    local count=$3
+    local delay=$4
+    
+    echo -e "${GREEN}🚀 Mulai spam API #$api_num - $count kali${NC}"
+    echo -e "Nominal: $nominal | Delay: ${delay}s"
+    echo ""
+    
+    for ((i=1; i<=count; i++)); do
+        echo -e "${BLUE}[$i/$count]${NC} Spam ke-$i"
+        create_qris "${API_KEYS[$((api_num-1))]}" "$api_num" "$nominal"
+        
+        if [ $i -lt $count ]; then
+            echo -e "${YELLOW}⏳ Delay $delay detik...${NC}"
+            sleep $delay
+        fi
+        echo ""
+    done
+}
+
+# Mode 2: Spam pake semua API (round robin)
+spam_all() {
+    local nominal=$1
+    local count=$2
+    local delay=$3
+    
+    echo -e "${GREEN}🚀 Spam ALL API - $count kali per API${NC}"
+    echo -e "Total: $((count * 3)) request | Delay: ${delay}s"
+    echo ""
+    
+    for ((i=1; i<=count; i++)); do
+        echo -e "${YELLOW}===== ROUND $i =====${NC}"
+        
+        for api_num in 1 2 3; do
+            echo -e "${BLUE}[API #$api_num]${NC}"
+            create_qris "${API_KEYS[$((api_num-1))]}" "$api_num" "$nominal"
+            sleep $delay
+        done
+        echo ""
+    done
+}
+
+# Mode 3: Spam loop forever
+spam_forever() {
+    local nominal=$1
+    local delay=$2
+    local mode=$3  # 1=single, 2=all
+    
+    echo -e "${GREEN}🔥 SPAM FOREVER MODE - Ctrl+C buat stop${NC}"
+    echo -e "Nominal: $nominal | Delay: ${delay}s"
+    echo -e "Log: qris_success.log & qris_failed.log"
+    echo ""
+    
+    local round=1
+    while true; do
+        if [ "$mode" = "1" ]; then
+            # Spam pake API 1,2,3 bergantian
+            for api_num in 1 2 3; do
+                echo -e "${YELLOW}[ROUND $round - API #$api_num]${NC}"
+                create_qris "${API_KEYS[$((api_num-1))]}" "$api_num" "$nominal"
+                sleep $delay
+            done
+        else
+            # Spam all API sekaligus (pake background)
+            echo -e "${YELLOW}[ROUND $round - PARALLEL]${NC}"
+            for api_num in 1 2 3; do
+                create_qris "${API_KEYS[$((api_num-1))]}" "$api_num" "$nominal" &
+            done
+            wait
+            sleep $delay
+        fi
+        ((round++))
+        echo ""
+    done
+}
+
+# ==================== MAIN MENU ====================
 main() {
+    # Install jq kalo belum ada
+    if ! command -v jq &> /dev/null; then
+        echo -e "${YELLOW}⚠️  Install jq dulu...${NC}"
+        apt install jq -y 2>/dev/null || pkg install jq -y 2>/dev/null
+    fi
+    
     while true; do
         show_header
         
-        echo -e "${YELLOW}💳 TUJUAN WITHDRAW:${NC}"
-        echo -e "   $BANK_CODE | $DEST_NUMBER | $DEST_NAME"
-        echo -e "   Fee: $(format_rupiah $FEE)"
+        echo -e "${CYAN}📋 MENU SPAM QRIS:${NC}"
+        echo "1. 🔥 Spam pake API #1 (sZtKMW3B...)"
+        echo "2. 🔥 Spam pake API #2 (xdpobigf...)"
+        echo "3. 🔥 Spam pake API #3 (Ob2ON2E...)"
+        echo "4. ⚡ Spam GILIRAN (API 1-2-3 bergantian)"
+        echo "5. 🚀 Spam ALL API (round robin)"
+        echo "6. ♾️  Spam FOREVER (giliran)"
+        echo "7. ⚡ Spam FOREVER (parallel)"
+        echo "8. 📊 Lihat log"
+        echo "9. ❌ Keluar"
         echo ""
         
-        echo -e "${CYAN}📋 DAFTAR API KEY:${NC}"
-        for i in "${!API_KEYS[@]}"; do
-            num=$((i+1))
-            key="${API_KEYS[$i]}"
-            echo -e "$num. ${GREEN}API #$num${NC} - ${key:0:25}...${key: -10}"
-        done
-        echo "4. ✨ Input API Key sendiri"
-        echo "5. ❌ Keluar"
-        echo ""
+        read -p "Pilih menu (1-9): " menu
         
-        read -p "Pilih API Key (1-5): " pilih
-        
-        if [ "$pilih" = "5" ]; then
-            echo -e "${GREEN}👋 Bye!${NC}"
-            exit 0
-        fi
-        
-        # Input nominal
-        echo ""
-        read -p "Nominal WD (contoh: 14000): " nominal
-        
-        if ! [[ "$nominal" =~ ^[0-9]+$ ]] || [ "$nominal" -le 0 ]; then
-            echo -e "${RED}❌ Nominal tidak valid!${NC}"
-            read -p "Enter buat lanjut..."
-            continue
-        fi
-        
-        net=$((nominal - FEE))
-        echo -e "Net diterima: $(format_rupiah $net)"
-        echo ""
-        
-        case $pilih in
+        case $menu in
             1|2|3)
-                idx=$((pilih-1))
-                withdraw "${API_KEYS[$idx]}" "$pilih" "$nominal"
+                read -p "Nominal QRIS (contoh: 10000): " nominal
+                read -p "Jumlah spam: " count
+                read -p "Delay (detik): " delay
+                spam_single "$menu" "$nominal" "$count" "$delay"
                 ;;
             4)
-                echo ""
-                read -p "Masukkan API Key: " custom_key
-                if [ -n "$custom_key" ]; then
-                    withdraw "$custom_key" "CUSTOM" "$nominal"
-                else
-                    echo -e "${RED}❌ API Key kosong${NC}"
-                fi
+                read -p "Nominal QRIS: " nominal
+                read -p "Jumlah per API: " count
+                read -p "Delay (detik): " delay
+                spam_all "$nominal" "$count" "$delay"
                 ;;
-            *)
-                echo -e "${RED}❌ Pilihan tidak valid${NC}"
+            5)
+                read -p "Nominal QRIS: " nominal
+                read -p "Jumlah round: " count
+                read -p "Delay (detik): " delay
+                for ((i=1; i<=count; i++)); do
+                    echo -e "${YELLOW}===== ROUND $i =====${NC}"
+                    for api_num in 1 2 3; do
+                        create_qris "${API_KEYS[$((api_num-1))]}" "$api_num" "$nominal"
+                        sleep $delay
+                    done
+                done
+                ;;
+            6)
+                read -p "Nominal QRIS: " nominal
+                read -p "Delay (detik): " delay
+                spam_forever "$nominal" "$delay" "1"
+                ;;
+            7)
+                read -p "Nominal QRIS: " nominal
+                read -p "Delay (detik): " delay
+                spam_forever "$nominal" "$delay" "2"
+                ;;
+            8)
+                echo -e "${CYAN}📊 LOG SUKSES:${NC}"
+                tail -20 qris_success.log 2>/dev/null || echo "Belum ada log"
+                echo ""
+                echo -e "${RED}📊 LOG GAGAL:${NC}"
+                tail -20 qris_failed.log 2>/dev/null || echo "Belum ada log"
+                ;;
+            9)
+                echo -e "${GREEN}👋 Bye!${NC}"
+                exit 0
                 ;;
         esac
         
@@ -199,13 +245,8 @@ main() {
     done
 }
 
-# Cek curl
-if ! command -v curl &> /dev/null; then
-    echo "❌ curl gak ada. Install dulu:"
-    echo "   pkg install curl  (Termux)"
-    echo "   apt-get install curl  (Linux)"
-    exit 1
-fi
+# Buat file log
+touch qris_success.log qris_failed.log
 
 # Jalanin
 main
