@@ -1,39 +1,37 @@
 #!/bin/bash
 
+PHP_SERVICE="php8.1-fpm"
 PANEL_DIR="/var/www/pterodactyl"
-FILE="$PANEL_DIR/app/Http/Controllers/Auth/LoginController.php"
 
 clear
-echo "=================================="
-echo " PTERODACTYL LOGIN ERROR CONTROL"
-echo "=================================="
+echo "======================================="
+echo " PTERODACTYL LOGIN OVERLOAD SIMULATOR"
+echo "======================================="
 echo ""
-echo "1. Aktifkan 500 Error Login"
-echo "2. Pulihkan Login Normal"
+echo "1. Aktifkan 500 Error Login (Stop PHP)"
+echo "2. Pulihkan Login Normal (Start PHP)"
+echo "3. Status PHP"
 echo ""
-read -p "Pilih opsi (1/2): " opsi
+read -p "Pilih opsi (1/2/3): " opsi
 
 if [ "$opsi" == "1" ]; then
-    echo "[INFO] Mengaktifkan 500 error login..."
-    
-    if [ -f "$FILE" ]; then
-        chmod 000 "$FILE"
-        echo "[SUCCESS] 500 error login aktif"
-    else
-        echo "[ERROR] File tidak ditemukan!"
-    fi
+
+    echo "[INFO] Menghentikan PHP-FPM..."
+    systemctl stop $PHP_SERVICE
+    echo "[SUCCESS] Login sekarang akan menghasilkan 500 error"
 
 elif [ "$opsi" == "2" ]; then
-    echo "[INFO] Memulihkan login..."
 
-    if [ -f "$FILE" ]; then
-        chmod 644 "$FILE"
-        chown www-data:www-data "$FILE"
-        echo "[SUCCESS] Login sudah normal"
-    else
-        echo "[ERROR] File tidak ditemukan!"
-    fi
+    echo "[INFO] Menjalankan PHP-FPM..."
+    systemctl start $PHP_SERVICE
+    echo "[SUCCESS] Login kembali normal"
+
+elif [ "$opsi" == "3" ]; then
+
+    systemctl status $PHP_SERVICE --no-pager
 
 else
+
     echo "[ERROR] Opsi tidak valid"
+
 fi
