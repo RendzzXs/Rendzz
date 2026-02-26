@@ -2,36 +2,188 @@
 
 PHP_SERVICE="php8.1-fpm"
 PANEL_DIR="/var/www/pterodactyl"
+NGINX_SERVICE="nginx"
+MYSQL_SERVICE="mysql"
+REDIS_SERVICE="redis-server"
+
+# Warna untuk output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
 clear
-echo "======================================="
-echo " PTERODACTYL LOGIN OVERLOAD SIMULATOR"
-echo "======================================="
+echo -e "${BLUE}=======================================${NC}"
+echo -e "${BLUE}   PTERODACTYL ERROR SIMULATOR${NC}"
+echo -e "${BLUE}=======================================${NC}"
 echo ""
-echo "1. Aktifkan 500 Error Login (Stop PHP)"
-echo "2. Pulihkan Login Normal (Start PHP)"
-echo "3. Status PHP"
+echo -e "${YELLOW}1.${NC} 500 Error Login (Stop PHP)"
+echo -e "${YELLOW}2.${NC} 502 Bad Gateway (Stop PHP + Nginx error)"
+echo -e "${YELLOW}3.${NC} 503 Service Unavailable (Stop Nginx)"
+echo -e "${YELLOW}4.${NC} 504 Gateway Timeout (Database overload)"
+echo -e "${YELLOW}5.${NC} 403 Forbidden (Permission error)"
+echo -e "${YELLOW}6.${NC} Connection Refused (Stop all services)"
+echo -e "${YELLOW}7.${NC} Database Error (Stop MySQL)"
+echo -e "${YELLOW}8.${NC} Redis Cache Error (Stop Redis)"
+echo -e "${YELLOW}9.${NC} Maintenance Mode (Enable panel maintenance)"
+echo -e "${YELLOW}10.${NC} Random 500 Error (Corrupt PHP file)"
+echo -e "${YELLOW}11.${NC} Restore All Services (Back to normal)"
+echo -e "${YELLOW}12.${NC} Status Semua Services"
+echo -e "${YELLOW}0.${NC} Keluar"
 echo ""
-read -p "Pilih opsi (1/2/3): " opsi
+read -p "Pilih opsi (0-12): " opsi
 
-if [ "$opsi" == "1" ]; then
+case $opsi in
+    1)
+        echo -e "${YELLOW}[INFO] Menghentikan PHP-FPM...${NC}"
+        systemctl stop $PHP_SERVICE
+        echo -e "${RED}[ERROR] PHP-FPM dimatikan - Login akan menghasilkan 500 error${NC}"
+        ;;
+        
+    2)
+        echo -e "${YELLOW}[INFO] Membuat 502 Bad Gateway...${NC}"
+        systemctl stop $PHP_SERVICE
+        # Buat error pada konfigurasi Nginx sementara
+        cp $PANEL_DIR/public/index.php $PANEL_DIR/public/index.php.bak
+        echo "<?php error; ?>" > $PANEL_DIR/public/index.php
+        echo -e "${RED}[ERROR] 502 Bad Gateway aktif - PHP dimatikan & file rusak${NC}"
+        ;;
+        
+    3)
+        echo -e "${YELLOW}[INFO] Menghentikan Nginx...${NC}"
+        systemctl stop $NGINX_SERVICE
+        echo -e "${RED}[ERROR] 503 Service Unavailable - Nginx dimatikan${NC}"
+        ;;
+        
+    4)
+        echo -e "${YELLOW}[INFO] Mensimulasikan database overload...${NC}"
+        # Buat proses berat di MySQL
+        mysql -e "SET GLOBAL max_connections = 1;" 2>/dev/null
+        echo -e "${RED}[ERROR] 504 Gateway Timeout - Koneksi database dibatasi${NC}"
+        ;;
+        
+    5)
+        echo -e "${YELLOW}[INFO] Mengubah permission folder...${NC}"
+        chmod 000 $PANEL_DIR/public
+        echo -e "${RED}[ERROR] 403 Forbidden - Permission folder diubah${NC}"
+        ;;
+        
+    6)
+        echo -e "${YELLOW}[INFO] Mematikan semua services...${NC}"
+        systemctl stop $PHP_SERVICE
+        systemctl stop $NGINX_SERVICE
+        systemctl stop $MYSQL_SERVICE
+        echo -e "${RED}[ERROR] Connection Refused - Semua services mati${NC}"
+        ;;
+        
+    7)
+        echo -e "${YELLOW}[INFO] Menghentikan MySQL...${NC}"
+        systemctl stop $MYSQL_SERVICE
+        echo -e "${RED}[ERROR] Database Error - MySQL dimatikan${NC}"
+        ;;
+        
+    8)
+        echo -e "${YELLOW}[INFO] Menghentikan Redis...${NC}"
+        systemctl stop $REDIS_SERVICE
+        echo -e "${RED}[ERROR] Redis Cache Error - Cache tidak bisa diakses${NC}"
+        ;;
+        
+    9)
+        echo -e "${YELLOW}[INFO] Mengaktifkan maintenance mode...${NC}"
+        cd $PANEL_DIR
+        php artisan down --message="Server sedang dalam perbaikan" --retry=60
+        echo -e "${RED}[ERROR] Maintenance Mode aktif - Panel tidak bisa diakses${NC}"
+        ;;
+        
+    10)
+        echo -e "${YELLOW}[INFO] Membuat random 500 error...${NC}"
+        # Backup file asli
+        cp $PANEL_DIR/public/index.php $PANEL_DIR/public/index.php.bak
+        # Buat file corrupt
+        cat > $PANEL_DIR/public/index.php << 'EOF'
+<?php
+// Random error generator
+if (rand(1, 100) <= 70) { // 70% chance of error
+    header("HTTP/1.0 500 Internal Server Error");
+    die("Internal Server Error - Silakan coba lagi");
+}
 
-    echo "[INFO] Menghentikan PHP-FPM..."
-    systemctl stop $PHP_SERVICE
-    echo "[SUCCESS] Login sekarang akan menghasilkan 500 error"
+// Kadang-kadang jalan normal
+require __DIR__ . '/../bootstrap/autoload.php';
+$app = require_once __DIR__ . '/../bootstrap/app.php';
+$app->run();
+?>
+EOF
+        systemctl restart $PHP_SERVICE
+        echo -e "${RED}[ERROR] Random 500 Error aktif - 70% request akan error${NC}"
+        ;;
+        
+    11)
+        echo -e "${GREEN}[INFO] Mengembalikan semua services ke normal...${NC}"
+        # Start semua services
+        systemctl start $PHP_SERVICE 2>/dev/null
+        systemctl start $NGINX_SERVICE 2>/dev/null
+        systemctl start $MYSQL_SERVICE 2>/dev/null
+        systemctl start $REDIS_SERVICE 2>/dev/null
+        
+        # Kembalikan konfigurasi database
+        mysql -e "SET GLOBAL max_connections = 151;" 2>/dev/null
+        
+        # Kembalikan permission
+        chmod 755 $PANEL_DIR/public 2>/dev/null
+        
+        # Kembalikan file yang dibackup
+        if [ -f "$PANEL_DIR/public/index.php.bak" ]; then
+            mv $PANEL_DIR/public/index.php.bak $PANEL_DIR/public/index.php
+        fi
+        
+        # Matikan maintenance mode
+        cd $PANEL_DIR 2>/dev/null
+        php artisan up 2>/dev/null
+        
+        echo -e "${GREEN}[SUCCESS] Semua services kembali normal${NC}"
+        ;;
+        
+    12)
+        echo -e "${BLUE}=======================================${NC}"
+        echo -e "${BLUE}        STATUS SEMUA SERVICES${NC}"
+        echo -e "${BLUE}=======================================${NC}"
+        echo ""
+        echo -e "${YELLOW}PHP-FPM Status:${NC}"
+        systemctl status $PHP_SERVICE --no-pager -l | grep "Active:"
+        echo ""
+        echo -e "${YELLOW}Nginx Status:${NC}"
+        systemctl status $NGINX_SERVICE --no-pager -l | grep "Active:"
+        echo ""
+        echo -e "${YELLOW}MySQL Status:${NC}"
+        systemctl status $MYSQL_SERVICE --no-pager -l | grep "Active:"
+        echo ""
+        echo -e "${YELLOW}Redis Status:${NC}"
+        systemctl status $REDIS_SERVICE --no-pager -l | grep "Active:"
+        echo ""
+        echo -e "${YELLOW}Maintenance Mode:${NC}"
+        if [ -f "$PANEL_DIR/storage/framework/down" ]; then
+            echo -e "${RED}Active${NC}"
+        else
+            echo -e "${GREEN}Inactive${NC}"
+        fi
+        echo ""
+        echo -e "${YELLOW}Panel Permission:${NC}"
+        ls -ld $PANEL_DIR/public 2>/dev/null | awk '{print "Permission: " $1}'
+        ;;
+        
+    0)
+        echo -e "${GREEN}Terima kasih!${NC}"
+        exit 0
+        ;;
+        
+    *)
+        echo -e "${RED}[ERROR] Opsi tidak valid${NC}"
+        ;;
+esac
 
-elif [ "$opsi" == "2" ]; then
-
-    echo "[INFO] Menjalankan PHP-FPM..."
-    systemctl start $PHP_SERVICE
-    echo "[SUCCESS] Login kembali normal"
-
-elif [ "$opsi" == "3" ]; then
-
-    systemctl status $PHP_SERVICE --no-pager
-
-else
-
-    echo "[ERROR] Opsi tidak valid"
-
-fi
+echo ""
+echo -e "${YELLOW}Tekan Enter untuk kembali ke menu...${NC}"
+read
+exec $0
