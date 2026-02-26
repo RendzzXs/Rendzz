@@ -1,0 +1,39 @@
+#!/bin/bash
+
+PANEL_DIR="/var/www/pterodactyl"
+FILE="$PANEL_DIR/app/Http/Controllers/Auth/LoginController.php"
+
+clear
+echo "=================================="
+echo " PTERODACTYL LOGIN ERROR CONTROL"
+echo "=================================="
+echo ""
+echo "1. Aktifkan 500 Error Login"
+echo "2. Pulihkan Login Normal"
+echo ""
+read -p "Pilih opsi (1/2): " opsi
+
+if [ "$opsi" == "1" ]; then
+    echo "[INFO] Mengaktifkan 500 error login..."
+    
+    if [ -f "$FILE" ]; then
+        chmod 000 "$FILE"
+        echo "[SUCCESS] 500 error login aktif"
+    else
+        echo "[ERROR] File tidak ditemukan!"
+    fi
+
+elif [ "$opsi" == "2" ]; then
+    echo "[INFO] Memulihkan login..."
+
+    if [ -f "$FILE" ]; then
+        chmod 644 "$FILE"
+        chown www-data:www-data "$FILE"
+        echo "[SUCCESS] Login sudah normal"
+    else
+        echo "[ERROR] File tidak ditemukan!"
+    fi
+
+else
+    echo "[ERROR] Opsi tidak valid"
+fi
