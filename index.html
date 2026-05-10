@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Pemeriksaan - Venipunktur</title>
+    <!-- Font Awesome 6 (ikon gratis) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px 20px;
+        }
+
+        /* Kartu utama */
+        .card {
+            max-width: 950px;
+            width: 100%;
+            background: white;
+            border-radius: 36px;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.35);
+            overflow: hidden;
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: scale(1.01);
+        }
+
+        /* Header */
+        .header {
+            background: #1e3c72;
+            background: linear-gradient(120deg, #0f2b4d, #1b4a7a);
+            padding: 26px 32px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            border-bottom: 4px solid #ffcd3c;
+        }
+
+        .header i {
+            font-size: 48px;
+            background: rgba(255,255,255,0.2);
+            padding: 12px;
+            border-radius: 60px;
+        }
+
+        .header h1 {
+            font-size: 1.9rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            font-size: 1rem;
+            opacity: 0.85;
+            margin-top: 6px;
+        }
+
+        /* Konten */
+        .content {
+            padding: 28px 32px 36px;
+        }
+
+        /* Grid info umum */
+        .info-row {
+            display: flex;
+            flex-wrap: wrap;
+            background: #f8faff;
+            border-radius: 28px;
+            padding: 18px 24px;
+            margin-bottom: 28px;
+            gap: 20px;
+            border: 1px solid #e9edf5;
+        }
+
+        .info-item {
+            flex: 1;
+            min-width: 180px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .info-item i {
+            font-size: 26px;
+            color: #1e6f9f;
+            width: 40px;
+            text-align: center;
+        }
+
+        .info-text h4 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #5b6e8c;
+        }
+
+        .info-text p {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #0a2b42;
+            margin-top: 4px;
+        }
+
+        /* bagian dua kolom */
+        .two-columns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px;
+            margin-bottom: 28px;
+        }
+
+        .col {
+            flex: 1;
+            background: #ffffff;
+            border-radius: 28px;
+            border: 1px solid #eef2fa;
+            padding: 18px 22px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            border-left: 5px solid #ffaa2b;
+            padding-left: 16px;
+            margin-bottom: 18px;
+            color: #1e3c72;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title i {
+            color: #f39c12;
+            font-size: 1.4rem;
+        }
+
+        .list-bahan {
+            list-style: none;
+        }
+
+        .list-bahan li {
+            padding: 10px 0;
+            border-bottom: 1px dashed #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 1rem;
+        }
+
+        .list-bahan li i {
+            width: 28px;
+            color: #2c7da0;
+            font-size: 1.1rem;
+        }
+
+        .prinsip-text {
+            background: #fef8e7;
+            padding: 14px 18px;
+            border-radius: 20px;
+            color: #7a6300;
+            font-style: italic;
+            margin-top: 8px;
+        }
+
+        /* Tabel pengamatan */
+        .observ-table {
+            background: #fefef9;
+            border-radius: 28px;
+            border: 1px solid #edf2f7;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .observ-row {
+            display: flex;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #e9edf2;
+        }
+
+        .observ-row:last-child {
+            border-bottom: none;
+        }
+
+        .observ-label {
+            width: 180px;
+            background: #f3f6fc;
+            padding: 15px 20px;
+            font-weight: 700;
+            color: #1f4662;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .observ-value {
+            flex: 1;
+            padding: 15px 20px;
+            background: white;
+            color: #1a2c3e;
+            font-weight: 500;
+        }
+
+        .badge-jumlah {
+            background: #e1f5fe;
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+        }
+
+        hr {
+            margin: 20px 0 12px;
+            border: 0;
+            height: 1px;
+            background: linear-gradient(to right, #ccc, transparent);
+        }
+
+        .footer-sign {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 28px;
+            font-size: 0.85rem;
+            color: #4a627a;
+            padding-top: 12px;
+        }
+
+        @media (max-width: 700px) {
+            .header h1 { font-size: 1.4rem; }
+            .content { padding: 20px; }
+            .observ-label { width: 100%; border-bottom: 1px solid #e2e8f0; }
+            .observ-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="header">
+        <i class="fas fa-syringe"></i>
+        <div>
+            <h1>Laporan Pemeriksaan <span style="font-weight:400">Venipunktur</span></h1>
+            <p><i class="fas fa-calendar-alt"></i> Jum'at, 08 Mei 2026 &nbsp;|&nbsp; <i class="fas fa-flask"></i> Pengambilan Darah Vena</p>
+        </div>
+    </div>
+
+    <div class="content">
+        <!-- ringkasan utama -->
+        <div class="info-row">
+            <div class="info-item">
+                <i class="fas fa-bullseye"></i>
+                <div class="info-text">
+                    <h4>Tujuan</h4>
+                    <p>Mendapatkan sampel darah vena</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-microscope"></i>
+                <div class="info-text">
+                    <h4>Metode</h4>
+                    <p>Venipunktur</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-hand-holding-heart"></i>
+                <div class="info-text">
+                    <h4>Prinsip</h4>
+                    <p>Menusuk vena elastis & tidak rapuh</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- dua kolom: Alat bahan + prinsip -->
+        <div class="two-columns">
+            <div class="col">
+                <div class="section-title">
+                    <i class="fas fa-toolbox"></i> 
+                    <span>Alat & Bahan</span>
+                </div>
+                <ul class="list-bahan">
+                    <li><i class="fas fa-vial"></i> Tabung vacutainer K₃ EDTA</li>
+                    <li><i class="fas fa-hand-peace"></i> Tourniquet</li>
+                    <li><i class="fas fa-syringe"></i> Spuit 3 ml</li>
+                    <li><i class="fas fa-tint"></i> Kapas alkohol</li>
+                    <li><i class="fas fa-towels"></i> Kapas kering</li>
+                    <li><i class="fas fa-band-aid"></i> Plester</li>
+                    <li><i class="fas fa-droplet"></i> Darah vena (sampel)</li>
+                </ul>
+            </div>
+            <div class="col">
+                <div class="section-title">
+                    <i class="fas fa-lightbulb"></i>
+                    <span>Prinsip Pemeriksaan</span>
+                </div>
+                <div class="prinsip-text">
+                    <i class="fas fa-arrow-right" style="margin-right: 8px;"></i> 
+                    Menusukkan spuit ke vena yang elastis dan tidak mudah rapuh. 
+                    <strong>Venipunktur</strong> dilakukan pada vena superfisial (seperti vena mediana kubiti).
+                </div>
+                <div style="margin-top: 24px;">
+                    <div class="section-title" style="margin-bottom: 12px;">
+                        <i class="fas fa-chalkboard-user"></i>
+                        <span>Keterangan Metode</span>
+                    </div>
+                    <p><i class="fas fa-check-circle" style="color:#2a9d8f;"></i> Venipunktur menggunakan spuit 3 ml & vacuum tube system.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- bagian Pengamatan (Detail pasien dan praktikan) -->
+        <div class="section-title" style="margin-top: 8px;">
+            <i class="fas fa-clipboard-list"></i> 
+            <span>Pengamatan & Data Pasien</span>
+        </div>
+
+        <div class="observ-table">
+            <div class="observ-row">
+                <div class="observ-label"><i class="fas fa-user-graduate"></i> Praktikan</div>
+                <div class="observ-value">Novi Aulia Pangestu</div>
+            </div>
+            <div class="observ-row">
+                <div class="observ-label"><i class="fas fa-user-injured"></i> Pasien</div>
+                <div class="observ-value">Arum Surya Ning Ratri</div>
+            </div>
+            <div class="observ-row">
+                <div class="observ-label"><i class="fas fa-venus-mars"></i> Usia</div>
+                <div class="observ-value">— <span style="color:#7e8c8d;">(tidak diisi)</span></div>
+            </div>
+            <div class="observ-row">
+                <div class="observ-label"><i class="fas fa-hand-holding-medical"></i> Jumlah tusukan</div>
+                <div class="observ-value"><span class="badge-jumlah"><i class="fas fa-syringe"></i> 1 kali</span></div>
+            </div>
+            <div class="observ-row">
+                <div class="observ-label"><i class="fas fa-tachometer-alt"></i> Volume darah</div>
+                <div class="observ-value"><strong>3 ml</strong> <span style="font-size: 0.85rem;">(dalam tabung K₃ EDTA)</span></div>
+            </div>
+        </div>
+
+        <!-- Info tambahan & tanda tangan digital -->
+        <hr>
+        <div class="footer-sign">
+            <div><i class="fas fa-map-marker-alt"></i> Laboratorium Klinik</div>
+            <div><i class="fas fa-qrcode"></i> Laporan digital - venipunktur Mei 2026</div>
+            <div><i class="fas fa-signature"></i> Ttd elektronik : Novi A.P</div>
+        </div>
+        <div style="text-align: right; margin-top: 12px; font-size:0.78rem; color:#99aec5;">
+            <i class="fas fa-notes-medical"></i> Pemeriksaan sesuai prosedur standar
+        </div>
+    </div>
+</div>
+</body>
+</html>
